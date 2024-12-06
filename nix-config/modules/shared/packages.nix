@@ -11,8 +11,10 @@ with pkgs; [
   coreutils
   killall
   neofetch
+  neovim
   openssh
   sqlite
+  wezterm
   wget
   zip
 
