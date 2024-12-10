@@ -75,7 +75,6 @@ in {
   # Fully declarative dock using the latest from Nix Store
   local.dock.enable = true;
   local.dock.entries = [
-    {path = "/Applications/Slack.app/";}
     {path = "/System/Applications/Messages.app/";}
     {path = "/System/Applications/Facetime.app/";}
     {path = "${pkgs.alacritty}/Applications/Alacritty.app/";}

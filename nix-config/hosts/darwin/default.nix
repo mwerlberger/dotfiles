@@ -65,11 +65,11 @@ let user = "mw"; in
       };
 
       dock = {
-        autohide = false;
+        autohide = true;
         show-recents = false;
-        launchanim = true;
+        launchanim = false;
         orientation = "bottom";
-        tilesize = 48;
+        tilesize = 24;
       };
 
       finder = {
