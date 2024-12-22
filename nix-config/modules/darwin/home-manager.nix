@@ -60,7 +60,7 @@ in {
         file = lib.mkMerge [
           sharedFiles
           additionalFiles
-          {"emacs-launcher.command".source = myEmacsLauncher;}
+          # {"emacs-launcher.command".source = myEmacsLauncher;}
         ];
         stateVersion = "23.11";
       };
