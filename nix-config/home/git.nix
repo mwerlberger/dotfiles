@@ -16,8 +16,8 @@
     enable = true;
     lfs.enable = true;
 
-    userName = Manuel Werlberger;
-    userEmail = code@werlberger.org;
+    userName = "Manuel Werlberger";
+    userEmail = "code@werlberger.org";
 
     # includes = [
     #   {

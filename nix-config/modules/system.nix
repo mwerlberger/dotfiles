@@ -29,7 +29,6 @@
         show-recents = false;
         orientation = "bottom";
         show-process-indicators = true;
-        show-recents = false;
         static-only = false;
         minimize-to-application = true;
         mru-spaces = false;
