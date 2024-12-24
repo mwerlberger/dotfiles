@@ -46,9 +46,10 @@
     # useful in bash/zsh prompt, not in nushell.
     eza = {
       enable = true;
+      icons = "auto";
       git = true;
-      icons = true;
       enableZshIntegration = true;
+      enableFishIntegration = true;
     };
 
     # terminal file manager
