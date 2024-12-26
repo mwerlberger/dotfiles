@@ -137,8 +137,9 @@
       };
 
       loginwindow = {
-        GuestEnabled = false;  # disable guest user
-        SHOWFULLNAME = true;  # show full name in login window
+        LoginwindowText = "MB Air M2 powered by Nix";
+        GuestEnabled = false;
+        SHOWFULLNAME = true;
       };
     };
 
