@@ -3,7 +3,7 @@
 {
   # import sub modules
   imports = [
-    ./fish.nix
+    # ./fish.nix
     ./shell.nix
     ./core.nix
     ./git.nix

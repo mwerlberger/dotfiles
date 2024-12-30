@@ -14,9 +14,10 @@
   networking.computerName = hostname;
   system.defaults.smb.NetBIOSName = hostname;
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
+  users.knownUsers = [ "${username}" ];
   users.users."${username}" = {
     home = "/Users/${username}";
+    uid = 501;
     description = username;
     shell = pkgs.fish;
   };

@@ -1,6 +1,4 @@
-{lib, sources, pkgs, ...}:
-
-{
+{lib, sources, pkgs, ...}: {
   programs.fish = {
     enable = true;
     # interactiveShellInit = lib.strings.concatStrings (lib.strings.intersperse "\n" ([

@@ -34,6 +34,7 @@
     glow # markdown previewer in terminal
 
     # dev
+    nixpkgs-fmt
     jujutsu
   ];
 
