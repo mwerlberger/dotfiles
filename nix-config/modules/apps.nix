@@ -10,12 +10,17 @@
   # and are rollbackable.  But on macOS, it's less stable than homebrew.
   #
   # Related Discussion: https://discourse.nixos.org/t/darwin-again/29331
+  #
+  # System packages are installed to `/run/current-system/sw/bin/`
   environment.systemPackages = with pkgs; [
+    # ghostty
+
     # system helpers
     ice-bar
     maccy
     rectangle
     stats
+    raycast
 
     # global apps
     neovim
@@ -24,10 +29,8 @@
   ];
   environment.variables.EDITOR = "nvim";
 
-  # TODO To make this work, homebrew need to be installed manually, see https://brew.sh
-  # 
-  # The apps installed by homebrew are not managed by nix, and not reproducible!
-  # But on macOS, homebrew has a much larger selection of apps than nixpkgs, especially for GUI apps!
+  # Try to avoid homebrew but for some things its handy but we uninstall everything
+  # That is not defined in the nix config here.
   homebrew = {
     enable = true;
 
@@ -67,6 +70,7 @@
     # `brew install --cask`
     casks = [
       "ghostty"
+      # "raycast"
       # "firefox"
       # "google-chrome"
       # "visual-studio-code"
@@ -77,7 +81,6 @@
 
       # "anki"
       # "iina" # video player
-      # "raycast" # (HotKey: alt/option + space)search, caculate and run scripts(with many plugins)
       # "stats" # beautiful system monitor
       # "eudic" # 欧路词典
 
@@ -87,3 +90,4 @@
     ];
   };
 }
+# 

@@ -1,4 +1,5 @@
 {pkgs, ...}: {
+  # home-manager packages are installed to `/etc/profiles/per-user/mw/bin/`
   home.packages = with pkgs; [
     # utils
     bat

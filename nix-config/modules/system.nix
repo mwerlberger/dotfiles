@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 
   ###################################################################################
   #
@@ -32,6 +32,22 @@
         static-only = false;
         minimize-to-application = true;
         mru-spaces = false;
+        persistent-apps = [
+          "/Applications/Ghostty.app"
+          "/Applications/Arc.app"
+          "/Applications/Safari.app"
+          "/Applications/Visual Studio Code.app"
+          "/System/Applications/Music.app"
+          "/System/Applications/Calendar.app"
+          "/System/Applications/Reminders.app"
+          "/System/Applications/Notes.app"
+          "/System/Applications/Photos.app"
+        ];
+        persistent-others = [
+          "/Applications"
+          "/Users/${username}/Documents"
+          "/Users/${username}/Downloads"
+        ];
       };
 
       # customize finder
@@ -172,28 +188,40 @@
   time.timeZone = "Europe/Zurich";
 
   # Fonts
-  fonts = {
-    packages = with pkgs; [
-      # icon fonts
-      material-design-icons
-      font-awesome
+  fonts.packages = with pkgs.nerd-fonts; [
+    # symbols icon only
+    # "NerdFontsSymbolsOnly"
+    # Characters
+    _0xproto
+    fira-code
+    hack
+    hasklug
+    iosevka
+    meslo-lg
+    inconsolata
+  ];
+  # fonts = {
+  #   packages = with pkgs; [
+  #     # icon fonts
+  #     material-design-icons
+  #     font-awesome
 
-      # nerdfonts
-      # https://github.com/NixOS/nixpkgs/blob/nixos-24.11/pkgs/data/fonts/nerdfonts/shas.nix
-      (nerdfonts.override {
-        fonts = [
-          # symbols icon only
-          "NerdFontsSymbolsOnly"
-          # Characters
-          "FiraCode"
-          "JetBrainsMono"
-          "Iosevka"
-          "Meslo"
-          "Hack"
-          "Inconsolata"
-          "InconsolataGo"
-        ];
-      })
-    ];
-  };
+  #     # nerdfonts
+  #     # https://github.com/NixOS/nixpkgs/blob/nixos-24.11/pkgs/data/fonts/nerdfonts/shas.nix
+  #     (nerdfonts.override {
+  #       fonts = [
+  #         # symbols icon only
+  #         "NerdFontsSymbolsOnly"
+  #         # Characters
+  #         "FiraCode"
+  #         "JetBrainsMono"
+  #         "Iosevka"
+  #         "Meslo"
+  #         "Hack"
+  #         "Inconsolata"
+  #         "InconsolataGo"
+  #       ];
+  #     })
+  #   ];
+  # };
 }
