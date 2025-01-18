@@ -14,7 +14,7 @@
   networking.computerName = hostname;
   system.defaults.smb.NetBIOSName = hostname;
 
-  users.knownUsers = [ "${username}" ];
+  users.knownUsers = ["${username}"];
   users.users."${username}" = {
     home = "/Users/${username}";
     uid = 501;

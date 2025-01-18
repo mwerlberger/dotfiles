@@ -1,5 +1,4 @@
-{ pkgs, ... }: {
-
+{pkgs, ...}: {
   ##########################################################################
   #  Install all apps and packages here.
   ##########################################################################
@@ -13,7 +12,7 @@
   #
   # System packages are installed to `/run/current-system/sw/bin/`
   environment.systemPackages = with pkgs; [
-    # ghostty
+    ghostty
 
     # system helpers
     ice-bar
@@ -23,8 +22,8 @@
     raycast
 
     # global apps
-    neovim
-    git
+    # neovim
+    # git
     just
   ];
   environment.variables.EDITOR = "nvim";
@@ -44,7 +43,7 @@
     # Applications to install from Mac App Store using mas.
     # You need to install all these Apps manually first so that your apple account have records for them.
     # otherwise Apple Store will refuse to install them.
-    # For details, see https://github.com/mas-cli/mas 
+    # For details, see https://github.com/mas-cli/mas
     masApps = {
       # Xcode = 497799835;
       # Wechat = 836500024;
@@ -90,4 +89,5 @@
     ];
   };
 }
-# 
+#
+

@@ -9,7 +9,7 @@
   ##################################################################################################################
 
   # the nixConfig here only affects the flake itself, not the system configuration!
-  # nixConfig = 
+  # nixConfig =
   #   substituters = [
   #     # Query the mirror of USTC first, and then the official cache.
   #     # "https://mirrors.ustc.edu.cn/nix-channels/store"
@@ -31,7 +31,7 @@
     # home-manager, used for managing user configuration
     home-manager = {
       # url = "github:nix-community/home-manager/release-24.11";
-      url = "github:nix-community/home-manager/master"; 
+      url = "github:nix-community/home-manager/master";
       # The `follows` keyword in inputs is used for inheritance.
       # Here, `inputs.nixpkgs` of home-manager is kept consistent with the `inputs.nixpkgs` of the current flake,
       # to avoid problems caused by different versions of nixpkgs dependencies.
@@ -110,8 +110,6 @@
             # mutableTaps = false;
           };
         }
-
-
 
         # Import other nix-darwin module configs
         ./modules/nix-core.nix

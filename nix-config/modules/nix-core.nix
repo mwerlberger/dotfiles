@@ -1,13 +1,14 @@
-
-{ pkgs, lib, ... }:
-
 {
+  pkgs,
+  lib,
+  ...
+}: {
   # enable flakes globally
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = ["nix-command" "flakes"];
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
-  
+
   # Auto upgrade nix package and the daemon service.
   services.nix-daemon.enable = true;
   # Use this instead of services.nix-daemon.enable if you
@@ -28,5 +29,4 @@
   nix.settings = {
     auto-optimise-store = false;
   };
-
 }
