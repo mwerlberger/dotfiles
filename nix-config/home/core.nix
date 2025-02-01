@@ -1,13 +1,25 @@
 {pkgs, ...}: {
   # home-manager packages are installed to `/etc/profiles/per-user/mw/bin/`
   home.packages = with pkgs; [
-    # utils
+    # editors, coding
+    # neovim
+    git
+    just
+    nixpkgs-fmt
+    jujutsu
+    podman
+    xh
+    
+    # Shell and Tooling
+    fish
+    eza
+    yazi
     bat
     ripgrep # recursively searches directories for a regex pattern
     jq # A lightweight and flexible command-line JSON processor
     yq-go # yaml processer https://github.com/mikefarah/yq
     fzf # A command-line fuzzy finder
-    just
+    skim
 
     # archives
     zip
@@ -33,11 +45,7 @@
     gnupg
 
     # productivity
-    glow # markdown previewer in terminal
-
-    # dev
-    nixpkgs-fmt
-    jujutsu
+    glow # markdown previewer in terminal\
   ];
 
   programs = {

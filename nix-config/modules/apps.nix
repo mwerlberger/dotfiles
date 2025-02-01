@@ -12,8 +12,6 @@
   #
   # System packages are installed to `/run/current-system/sw/bin/`
   environment.systemPackages = with pkgs; [
-    ghostty
-
     # system helpers
     ice-bar
     maccy
@@ -24,7 +22,7 @@
     # global apps
     # neovim
     # git
-    just
+    # just
   ];
   environment.variables.EDITOR = "nvim";
 
