@@ -18,6 +18,7 @@
     rectangle
     stats
     raycast
+    numi
 
     # global apps
     # neovim
@@ -67,6 +68,7 @@
     # `brew install --cask`
     casks = [
       "ghostty"
+      "vivaldi"
       # "raycast"
       # "firefox"
       # "google-chrome"

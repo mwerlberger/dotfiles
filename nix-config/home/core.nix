@@ -9,7 +9,9 @@
     jujutsu
     podman
     xh
-    
+    docker-compose
+    rancher
+
     # Shell and Tooling
     fish
     eza
