@@ -67,8 +67,14 @@
 
     # `brew install --cask`
     casks = [
-      "ghostty"
-      "vivaldi"
+      {
+        name = "ghostty";
+        greedy = true;
+      }
+      {
+        name = "vivaldi";
+        greedy = true;
+      }
       # "raycast"
       # "firefox"
       # "google-chrome"
