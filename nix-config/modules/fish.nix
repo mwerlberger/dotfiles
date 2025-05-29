@@ -23,7 +23,6 @@
       gl = "git prettylog";
       gp = "git push";
       gs = "git status";
-      gt = "git tag";
 
       jf = "jj git fetch";
       jn = "jj new";

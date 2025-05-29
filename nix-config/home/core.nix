@@ -4,6 +4,7 @@
     # editors, coding
     # neovim
     git
+    graphite-cli
     just
     nixpkgs-fmt
     jujutsu
@@ -11,6 +12,7 @@
     xh
     docker-compose
     rancher
+    code-cursor
 
     # Shell and Tooling
     fish
