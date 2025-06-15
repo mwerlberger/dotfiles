@@ -2,7 +2,7 @@
 
 ```bash
 DISK1="/dev/disk/by-id/ata-Samsung_SSD_870_EVO_500GB_S6PYNL0Y211610F"
-$DISK2="/dev/disk/by-id/ata-Samsung_SSD_870_EVO_500GB_S6PYNL0Y211413X"
+DISK2="/dev/disk/by-id/ata-Samsung_SSD_870_EVO_500GB_S6PYNL0Y211413X"
 ```
 
 ```bash
