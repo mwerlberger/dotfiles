@@ -65,6 +65,65 @@ swapon $SWAP_PART1
 swapon $SWAP_PART2
 ```
 
+# ZFS
+
+```bash
+zpool status
+```
+
+
+# HDD Setup
+
+## Burn-in / initial check
+
+Don't forget to use tmux...
+
+```bash
+nix-shell -p smartmontools badblocks fio
+lsblk -d -o NAME,MODEL,SERIAL,SIZE
+```
+
+- simple PASSED / FAILED
+```
+sudo smartctl -i /dev/sdX
+```
+
+- details 
+```
+sudo smartctl -A /dev/sdX
+```
+
+check RAW_VALUES being ZERO:
+- Reallocated_Sector_Ct
+- Current_Pending_Sector
+- Offline_Uncorrectable
+- Seek_Error_Rate
+
+- long self-test
+```
+sudo smartctl -t long /dev/sdX
+```
+
+- destructive burn-in (might take several hours / days)
+```
+sudo badblocks -b 4096 -wsv /dev/sdX
+```
+
+- final check
+```
+sudo smartctl -A /dev/sdX
+```
+
+
+
+Summary of Process
+For each drive:
+
+- Initial S.M.A.R.T. Check: `smartctl -H -A /dev/sdX`. Look for PASSED and zero error attributes.
+- S.M.A.R.T. Long Test: `smartctl -t long /dev/sdX`. Wait for it to complete without errors.
+- Destructive Surface Scan: `badblocks -wsv /dev/sdX`. Wait for it to complete with 0 errors.
+- Final S.M.A.R.T. Check: `smartctl -A /dev/sdX`. Ensure Reallocated_Sector_Ct is still zero.
+
 
 # NixOS configuration
 
@@ -75,6 +134,20 @@ nix-env -f '<nixpkgs>' -iA vim
 vim /mnt/etc/nixos/configuration.nix
 
 ```
+
+Changes:
+```bash
+nixos-rebuild swtich
+```
+
+
+
+Changes:
+```bash
+nixos-rebuild swtich
+```
+
+
 
 
 # zpool data

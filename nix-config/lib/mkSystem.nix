@@ -38,19 +38,19 @@ in
       specialArgs = inputs // { inherit username useremail; };
 
       modules = [
-        # 1. Host-specific configuration
+        # # 1. Host-specific configuration
         "${hostsDir}/${hostname}"
 
-        # 2. Home Manager configuration
-        home-manager.darwinModules.home-manager
-        {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-            extraSpecialArgs = inputs // { inherit username useremail; };
-            users.${username} = import "${hostsDir}/${hostname}/home.nix";
-          };
-        }
+        # # 2. Home Manager configuration
+        # home-manager.darwinModules.home-manager
+        # {
+        #   home-manager = {
+        #     useGlobalPkgs = true;
+        #     useUserPackages = true;
+        #     extraSpecialArgs = inputs // { inherit username useremail; };
+        #     users.${username} = import "${hostsDir}/${hostname}/home.nix";
+        #   };
+        # }
       ];
     };
 }

@@ -26,6 +26,13 @@ darwin-debug:
 
   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose
 
+[group('desktop')]
+darwin-debug-dry-run: 
+  nix build .#darwinConfigurations.{{hostname}}.system --show-trace --verbose --dry-run \
+    --extra-experimental-features 'nix-command flakes'
+
+  sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose --dry-run
+
 ############################################################################
 #
 #  nix related commands

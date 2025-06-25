@@ -42,6 +42,9 @@
   }: let
     # Import our library of helper functions
     lib = import ./lib { inherit inputs; };
+    formatter = inputs.flake-utils.lib.eachDefaultSystem (system:
+      inputs.nixpkgs-stable.legacyPackages.${system}.alejandra
+    );
   in {
     # == Your NixOS Machine(s) ==
     nixosConfigurations."sagittarius" = lib.mkNixosSystem {
@@ -58,11 +61,6 @@
       pkgs = inputs.nixpkgs-unstable;
       home-manager = inputs.home-manager-unstable;
     };
-
-    # == Universal Formatter ==
-    formatter = inputs.flake-utils.lib.eachDefaultSystem (system:
-      inputs.nixpkgs-stable.legacyPackages.${system}.alejandra
-    );
   };
 
   #   darwinConfigurations."${hostname}" = inputs.darwin.lib.darwinSystem {
