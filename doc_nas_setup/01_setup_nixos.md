@@ -75,3 +75,35 @@ nix-env -f '<nixpkgs>' -iA vim
 vim /mnt/etc/nixos/configuration.nix
 
 ```
+
+
+# zpool data
+zpool create -f \
+    -o ashift=12 \
+    -o autotrim=on \
+    -m /data/lake \
+    lake \
+    raidz2 \
+      /dev/disk/by-id/ata-ST8000NT001-3LZ101_WWZ8Q357 \
+      /dev/disk/by-id/ata-ST8000NT001-3LZ101_WWZ8Q378 \
+      /dev/disk/by-id/ata-ST8000NT001-3LZ101_WWZ8Q3EN \
+      /dev/disk/by-id/ata-ST8000NT001-3LZ101_WWZ8Q3QB \
+    special mirror \
+      /dev/disk/by-id/nvme-Samsung_SSD_990_PRO_4TB_S7DPNF0Y327165B \
+      /dev/disk/by-id/nvme-Samsung_SSD_990_PRO_with_Heatsink_4TB_S7DSNJ0Y203121H
+
+zfs set compression=lz4 lake
+
+zfs create lake/media
+zfs create lake/documents
+zfs create lake/photos
+zfs create lake/backups
+
+# Photo thumbnails and many JPEGs are < 1MB
+zfs set special_small_blocks=512K lake
+zfs set special_small_blocks=1M lake/photos
+zfs set special_small_blocks=0 lake/media
+zfs set special_small_blocks=0 lake/backups
+
+
+zpool list -v lake
