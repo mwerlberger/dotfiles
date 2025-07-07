@@ -31,14 +31,33 @@ in
       ];
     };
 
+  # == Darwin system factory ==
+  mkDarwin = hostname: nixpkgsVersion: extraHmModules: extraModules: {
+    darwinConfigurations.${hostname} = inputs.nix-darwin.lib.darwinSystem {
+      system = "aarch64-darwin";
+      specialArgs = {
+        inherit inputs;
+      };
+      modules = [
+        # inputs.agenix-darwin.darwinModules.default
+        ${hostsDir}
+        ${hostsDir}/${hostname}
+        # inputs.home-manager-unstable.darwinModules.home-manager
+        # (nixpkgsVersion.lib.attrsets.recursiveUpdate (homeManagerCfg true extraHmModules) {
+        #   home-manager.users.notthebee.home.homeDirectory = nixpkgsVersion.lib.mkForce "/Users/notthebee";
+        # })
+      ] ++ extraModules;
+    };
+  };
+
   # == DARWIN SYSTEM FACTORY ==
   mkDarwinSystem = { hostname, system ? "aarch64-darwin", pkgs, home-manager }:
-    inputs.darwin.lib.darwinSystem {
+    inputs.nix-darwin.lib.darwinSystem {
       inherit system;
       specialArgs = inputs // { inherit username useremail; };
 
       modules = [
-        # # 1. Host-specific configuration
+        # 1. Host-specific configuration
         "${hostsDir}/${hostname}"
 
         # # 2. Home Manager configuration
@@ -48,7 +67,7 @@ in
         #     useGlobalPkgs = true;
         #     useUserPackages = true;
         #     extraSpecialArgs = inputs // { inherit username useremail; };
-        #     users.${username} = import "${hostsDir}/${hostname}/home.nix";
+        #     users.${username} = import "${hostsDir}/${hostname}/home";
         #   };
         # }
       ];

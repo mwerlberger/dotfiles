@@ -172,7 +172,7 @@ zfs create lake/documents
 zfs create lake/photos
 zfs create lake/backups
 
-# Photo thumbnails and many JPEGs are < 1MB
+# Set different small block sizes for different use cases
 zfs set special_small_blocks=512K lake
 zfs set special_small_blocks=1M lake/photos
 zfs set special_small_blocks=0 lake/media
