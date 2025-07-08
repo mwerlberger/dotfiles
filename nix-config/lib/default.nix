@@ -14,7 +14,7 @@ let
     home-manager.users.mw.imports = [
       # inputs.agenix.homeManagerModules.default
       inputs.nix-index-database.hmModules.nix-index
-      # ./users/mw/dots.nix
+      ../home/dots.nix
       # ./users/mw/age.nix
     ] ++ extraImports;
     home-manager.backupFileExtension = "bak";

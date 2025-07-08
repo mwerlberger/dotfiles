@@ -24,6 +24,14 @@
       no_quarantine = true;
     };
     casks = [
+      {
+        name = "ghostty";
+        greedy = true;
+      }
+      {
+        name = "vivaldi";
+        greedy = true;
+      }
       "notion"
       "telegram"
       "libreoffice"
@@ -41,6 +49,8 @@
     ];
     brews = [
       "pulumi"
+      "wget"
+      "curl"
     ];
   };
 
@@ -136,44 +146,5 @@
     zstd
   ];
 
-  programs = {
-    # modern vim
-    neovim = {
-      enable = true;
-      defaultEditor = true;
-      vimAlias = true;
-    };
-
-    # A modern replacement for ‘ls’
-    # useful in bash/zsh prompt, not in nushell.
-    eza = {
-      enable = true;
-      icons = "auto";
-      git = true;
-      enableZshIntegration = true;
-      enableFishIntegration = true;
-    };
-
-    # terminal file manager
-    yazi = {
-      enable = true;
-      enableZshIntegration = true;
-      settings = {
-        manager = {
-          show_hidden = true;
-          sort_dir_first = true;
-        };
-      };
-    };
-
-    # skim provides a single executable: sk.
-    # Basically anywhere you would want to use grep, try sk instead.
-    skim = {
-      enable = true;
-      enableBashIntegration = true;
-    };
-  };
-
-
-  system.stateVersion = 5;
+  system.stateVersion = 4;
 }
