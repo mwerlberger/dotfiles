@@ -1,20 +1,28 @@
+# hosts/mw-mb-air-m2/default.nix
+{ pkgs, username ? "mw", ... }:
+
 {
-  pkgs,
-  username,
-  ...
-}:
-###################################################################################
-#
-#  macOS's System configuration
-#
-#  All the configuration options are documented here:
-#    https://daiderd.com/nix-darwin/manual/index.html#sec-options
-#  Incomplete list of macOS `defaults` commands :
-#    https://github.com/yannbertrand/macos-defaults
-#
-###################################################################################
-{
-  system.primaryUser = username;
+  # Basic system info
+  networking.hostName = "mw-mb-air-m2";
+
+  # User account for your Mac
+  users.users.mw = {
+    name = "mw";
+    home = "/Users/mw";
+  };
+  system.primaryUser = "mw";
+
+  # Homebrew configuration
+  # services.nix-homebrew = {
+  #   enable = true;
+  #   user = "mw";
+  #   enableRosetta = true;
+  #   # You can manage taps here if you want
+  #   # taps = { ... };
+  # };
+
+  # system.defaults.scrollwheel.swipescrolldirection = false;
+  # system.primaryUser = username;
   system = {
     stateVersion = 5;
     # activationScripts are executed every time you boot the system or run `nixos-rebuild` / `darwin-rebuild`.
@@ -204,28 +212,13 @@
     meslo-lg
     inconsolata
   ];
-  # fonts = {
-  #   packages = with pkgs; [
-  #     # icon fonts
-  #     material-design-icons
-  #     font-awesome
 
-  #     # nerdfonts
-  #     # https://github.com/NixOS/nixpkgs/blob/nixos-24.11/pkgs/data/fonts/nerdfonts/shas.nix
-  #     (nerdfonts.override {
-  #       fonts = [
-  #         # symbols icon only
-  #         "NerdFontsSymbolsOnly"
-  #         # Characters
-  #         "FiraCode"
-  #         "JetBrainsMono"
-  #         "Iosevka"
-  #         "Meslo"
-  #         "Hack"
-  #         "Inconsolata"
-  #         "InconsolataGo"
-  #       ];
-  #     })
-  #   ];
-  # };
+
+  # Import modules for this host.
+  # You can create these files in the modules/ directory.
+  imports = [
+    ../../modules/darwin
+    # ../../modules/shared/default.nix
+  ];
+
 }

@@ -1,4 +1,17 @@
-# Nix Darwin Kickstarter - Rich Demo
+# Commands
+
+```
+darwin-rebuild build --flake .#mw-mb-air-m2 
+
+darwin-rebuild test --flake .#mw-mb-air-m2 
+
+darwin-rebuild switch --flake .#mw-mb-air-m2 
+```
+
+
+
+
+# OLD: Nix Darwin Kickstarter - Rich Demo
 
  An extensive demo featuring a plethora of configurations that can serve as a reference for your setup. However, exercise caution, as it may **OVERWRITE** your system configuration. **DO NOT** deploy it directly to your system.
 
