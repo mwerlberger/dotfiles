@@ -5,6 +5,22 @@
   ...
 }:
 {
+  networking.hostName = "mw-mb-air-m2";
+  networking.computerName = "mw-mb-air-m2";
+  system.defaults.smb.NetBIOSName = "mw-mb-air-m2";
+  
+
+  # User account for your Mac
+  users.users.mw = {
+    name = "mw";
+    home = "/Users/mw";
+    uid = 501;
+    # shell = pkgs.fish;
+  };
+
+  # Align nix-darwin's expected GID with the actual system GID.
+  ids.gids.nixbld = 350;
+
   system.primaryUser = "mw";
 
   # imports = [
