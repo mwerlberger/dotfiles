@@ -5,16 +5,16 @@
 }:
 {
   environment.systemPackages = with pkgs; [
-    (python312Full.withPackages (
-      ps: with ps; [
-        pip
-        # jmespath
-        # requests
-        # setuptools
-        # pyyaml
-        # pyopenssl
-      ]
-    ))
+    # (python312Full.withPackages (
+    #   ps: with ps; [
+    #     pip
+    #     # jmespath
+    #     # requests
+    #     # setuptools
+    #     # pyyaml
+    #     # pyopenssl
+    #   ]
+    # ))
     # inputs.agenix.packages."${system}".default
     # karabiner-elements
     # mkcert
@@ -22,6 +22,7 @@
     # spotify
     # sqlite
     # utm
+    arc-browser
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
     bat
     # caddy
@@ -78,8 +79,8 @@
     rectangle
     # ripgrep
     rsync
-    skim
     slack
+    skim
     socat
     stats
     tmux
