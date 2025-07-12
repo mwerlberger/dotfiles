@@ -1,7 +1,5 @@
 {
   lib,
-  username,
-  useremail,
   ...
 }: {
   # `programs.git` will generate the config file: ~/.config/git/config
@@ -56,10 +54,6 @@
       ca = "commit -am";
       dc = "diff --cached";
       amend = "commit --amend -m";
-
-      # aliases for submodule
-      update = "submodule update --init --recursive";
-      foreach = "submodule foreach";
     };
   };
 }

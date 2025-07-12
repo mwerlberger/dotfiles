@@ -23,10 +23,10 @@
 
   system.primaryUser = "mw";
 
-  # imports = [
-  #   "${inputs.secrets}/work.nix"
-  #   ./secrets.nix
-  # ];
+  imports = [
+    #   "${inputs.secrets}/work.nix"
+    #   ./secrets.nix
+  ];
 
   homebrew = {
     enable = true;
@@ -48,20 +48,21 @@
         name = "vivaldi";
         greedy = true;
       }
-      "notion"
+      # "notion"
       "telegram"
-      "libreoffice"
+      # "libreoffice"
       "signal"
-      "grid"
-      "google-chrome"
-      "handbrake"
-      "tailscale"
-      "bambu-studio"
-      "element"
-      "microsoft-outlook"
-      "monitorcontrol"
+      # "grid"
+      # "google-chrome"
+      # "handbrake"
+      # "tailscale"
+      # "bambu-studio"
+      # "element"
+      # "microsoft-outlook"
+      # "monitorcontrol"
       "raycast"
       "mattermost"
+      "freetube"
     ];
     brews = [
       "pulumi"
@@ -162,5 +163,12 @@
     zstd
   ];
 
+  # programs.zsh.enable = true;
+  # If you use fish or bash, enable them instead:
+  programs.fish.enable = true;
+  # programs.bash.enable = true;
+
   system.stateVersion = 4;
+
+  
 }

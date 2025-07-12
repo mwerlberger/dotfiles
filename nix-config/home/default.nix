@@ -18,19 +18,20 @@ in
 
   home = home;
 
-  # imports = [
+  imports = [
+    ./git.nix
   #   ../../dots/zsh/default.nix
   #   ../../dots/nvim/default.nix
   #   ../../dots/neofetch/default.nix
   #   ./gitconfig.nix
-  # ];
+  ];
 
   programs.nix-index = {
     enable = true;
     enableZshIntegration = true;
   };
 
-    programs.fish = {
+  programs.fish = {
     enable = true;
     # interactiveShellInit = lib.strings.concatStrings (lib.strings.intersperse "\n" ([
     #   "source ${sources.theme-bobthefish}/functions/fish_prompt.fish"
@@ -41,19 +42,19 @@ in
     # ]));
 
     shellAliases = {
-      ga = "git add";
-      gc = "git commit";
-      gco = "git checkout";
-      gcp = "git cherry-pick";
-      gdiff = "git diff";
-      gl = "git prettylog";
-      gp = "git push";
-      gs = "git status";
-      gt = "git tag";
+      # ga = "git add";
+      # gc = "git commit";
+      # gco = "git checkout";
+      # gcp = "git cherry-pick";
+      # gdiff = "git diff";
+      # gl = "git prettylog";
+      # gp = "git push";
+      # gs = "git status";
+      # # gt = "git tag";
 
-      jf = "jj git fetch";
-      jn = "jj new";
-      js = "jj st";
+      # jf = "jj git fetch";
+      # jn = "jj new";
+      # js = "jj st";
     };
 
     # plugins = map (n: {

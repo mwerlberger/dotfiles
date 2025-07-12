@@ -1,45 +1,57 @@
 # just is a command runner, Justfile is very similar to Makefile, but simpler.
 
-hostname := "mw-mb-air-m2"
+darwin_hostname := "mw-mb-air-m2"
 
 # List all the just commands
 default:
   @just --list
 
-############################################################################
-#
-#  Darwin related commands
-#
-############################################################################
+[group('desktop')]
+darwin-switch:
+  darwin-rebuild switch --flake .#{{darwin_hostname}}
 
 [group('desktop')]
-darwin: 
-  nix build .#darwinConfigurations.{{hostname}}.system \
-    --extra-experimental-features 'nix-command flakes'
-
-  sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}}
+darwin-build:
+  darwin-rebuild build --flake .#{{darwin_hostname}}
 
 [group('desktop')]
-darwin-dry-run: 
-  nix build .#darwinConfigurations.{{hostname}}.system --dry-run \
-    --extra-experimental-features 'nix-command flakes'
+darwin-check:
+  darwin-rebuild check --flake .#{{darwin_hostname}}
 
-  sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --dry-run
+# ############################################################################
+# #
+# #  Darwin related commands
+# #
+# ############################################################################
+
+# [group('desktop')]
+# darwin: 
+#   nix build .#darwinConfigurations.{{hostname}}.system \
+#     --extra-experimental-features 'nix-command flakes'
+
+#   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}}
+
+# [group('desktop')]
+# darwin-dry-run: 
+#   nix build .#darwinConfigurations.{{hostname}}.system --dry-run \
+#     --extra-experimental-features 'nix-command flakes'
+
+#   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --dry-run
 
 
-[group('desktop')]
-darwin-debug: 
-  nix build .#darwinConfigurations.{{hostname}}.system --show-trace --verbose \
-    --extra-experimental-features 'nix-command flakes'
+# [group('desktop')]
+# darwin-debug: 
+#   nix build .#darwinConfigurations.{{hostname}}.system --show-trace --verbose \
+#     --extra-experimental-features 'nix-command flakes'
 
-  sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose
+#   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose
 
-[group('desktop')]
-darwin-debug-dry-run: 
-  nix build .#darwinConfigurations.{{hostname}}.system --show-trace --verbose --dry-run \
-    --extra-experimental-features 'nix-command flakes'
+# [group('desktop')]
+# darwin-debug-dry-run: 
+#   nix build .#darwinConfigurations.{{hostname}}.system --show-trace --verbose --dry-run \
+#     --extra-experimental-features 'nix-command flakes'
 
-  sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose --dry-run
+#   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose --dry-run
 
 ############################################################################
 #
