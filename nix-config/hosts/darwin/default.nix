@@ -22,7 +22,7 @@
   # services.karabiner-elements.enable = true;
   nix = {
     settings = {
-      experimental-features = ["nix-command" "flakes"];
+      experimental-features = [ "nix-command" "flakes" ];
       max-jobs = "auto";
       trusted-users = [
         "root"

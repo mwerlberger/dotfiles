@@ -1,14 +1,13 @@
-{
-  inputs,
-  pkgs,
-  username,
-  ...
+{ inputs
+, pkgs
+, username
+, ...
 }:
 {
   networking.hostName = "mw-mb-air-m2";
   networking.computerName = "mw-mb-air-m2";
   system.defaults.smb.NetBIOSName = "mw-mb-air-m2";
-  
+
 
   # User account for your Mac
   users.users."${username}" = {
@@ -28,8 +27,4 @@
     #   "${inputs.secrets}/work.nix"
     #   ./secrets.nix
   ];
-
-
-
-
 }

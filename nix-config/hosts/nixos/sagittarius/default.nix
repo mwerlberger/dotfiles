@@ -19,7 +19,7 @@
     isNormalUser = true;
     extraGroups = [ "wheel" ]; # for sudo
   };
-  
+
   # Install some packages system-wide
   environment.systemPackages = with pkgs; [
     vim

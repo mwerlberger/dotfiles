@@ -17,15 +17,15 @@ in
   };
 
   home = home;
-  
+
 
   imports = [
     ./git.nix
     ./apps.nix
-  #   ../../dots/zsh/default.nix
-  #   ../../dots/nvim/default.nix
-  #   ../../dots/neofetch/default.nix
-  #   ./gitconfig.nix
+    #   ../../dots/zsh/default.nix
+    #   ../../dots/nvim/default.nix
+    #   ../../dots/neofetch/default.nix
+    #   ./gitconfig.nix
   ];
 
   programs.home-manager.enable = true;
