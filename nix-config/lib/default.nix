@@ -27,6 +27,7 @@ in
       system = "aarch64-darwin";
       specialArgs = {
         inherit inputs;
+        username = "mw";
       };
       modules = [
         # inputs.agenix-darwin.darwinModules.default
@@ -35,6 +36,9 @@ in
         inputs.home-manager-unstable.darwinModules.home-manager
         (nixpkgsVersion.lib.attrsets.recursiveUpdate (homeManagerCfg true extraHmModules) {
           home-manager.users.mw.home.homeDirectory = nixpkgsVersion.lib.mkForce "/Users/mw";
+          home-manager.extraSpecialArgs = {
+            username = "mw";
+          };
         })
       ];
     };

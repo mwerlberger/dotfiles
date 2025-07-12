@@ -1,21 +1,21 @@
 # hosts/mw-mb-air-m2/default.nix
-{ pkgs, username ? "mw", ... }:
+{ pkgs, username, ... }:
 
 {
   # Basic system info
   networking.hostName = "mw-mb-air-m2";
 
   # User account for your Mac
-  users.users.mw = {
-    name = "mw";
-    home = "/Users/mw";
+  users.users."${username}" = {
+    name = "Manuel Werlberger";
+    home = "/Users/${username}";
   };
-  system.primaryUser = "mw";
+  system.primaryUser = username;
 
   # Homebrew configuration
   # services.nix-homebrew = {
   #   enable = true;
-  #   user = "mw";
+  #   user = username;
   #   enableRosetta = true;
   #   # You can manage taps here if you want
   #   # taps = { ... };

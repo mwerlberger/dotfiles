@@ -1,7 +1,7 @@
 {
   inputs,
   pkgs,
-  username ? "mw",
+  username,
   ...
 }:
 {
@@ -11,9 +11,9 @@
   
 
   # User account for your Mac
-  users.users.mw = {
-    name = "mw";
-    home = "/Users/mw";
+  users.users."${username}" = {
+    name = "${username}";
+    home = "/Users/${username}";
     uid = 501;
     # shell = pkgs.fish;
   };
@@ -21,9 +21,8 @@
   # Align nix-darwin's expected GID with the actual system GID.
   ids.gids.nixbld = 350;
 
-  system.primaryUser = "mw";
-
   imports = [
+    ./system.nix
     #   "${inputs.secrets}/work.nix"
     #   ./secrets.nix
   ];
@@ -167,8 +166,4 @@
   # If you use fish or bash, enable them instead:
   programs.fish.enable = true;
   # programs.bash.enable = true;
-
-  system.stateVersion = 4;
-
-  
 }
