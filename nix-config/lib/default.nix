@@ -31,7 +31,6 @@ in
       };
       modules = [
         # inputs.agenix-darwin.darwinModules.default
-        ../hosts/darwin/nix-homebrew.nix
         ../hosts/darwin
         ../hosts/darwin/${machineHostname}
         inputs.home-manager-unstable.darwinModules.home-manager
