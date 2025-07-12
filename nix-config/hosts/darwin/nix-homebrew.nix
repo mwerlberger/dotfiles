@@ -1,3 +1,2 @@
 { inputs, pkgs, username, ... }:
-{
-}
+{ }

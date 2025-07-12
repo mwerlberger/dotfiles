@@ -43,7 +43,7 @@ in
       ] ++ extraModules;
     };
   };
-  
+
   mkNixos = machineHostname: nixpkgsVersion: extraModules: rec {
     deploy.nodes.${machineHostname} = {
       hostname = machineHostname;
@@ -72,8 +72,10 @@ in
       ] ++ extraModules;
     };
   };
-  
-  mkMerge = inputs.nixpkgs-stable.lib.lists.foldl' (
-    a: b: inputs.nixpkgs-stable.lib.attrsets.recursiveUpdate a b
-  ) { };
+
+  mkMerge = inputs.nixpkgs-stable.lib.lists.foldl'
+    (
+      a: b: inputs.nixpkgs-stable.lib.attrsets.recursiveUpdate a b
+    )
+    { };
 }
