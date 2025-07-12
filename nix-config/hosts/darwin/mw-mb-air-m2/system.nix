@@ -48,8 +48,8 @@
           "/System/Applications/Photos.app"
         ];
         persistent-others = [
-          "/Users/${username}/Documents"
           "/Users/${username}/Downloads"
+          "/Users/${username}/Documents"
           "/Applications"
         ];
       };

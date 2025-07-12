@@ -10,7 +10,6 @@
     jujutsu
     podman
     xh
-    docker-compose
     rancher
     code-cursor
 
