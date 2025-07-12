@@ -29,14 +29,19 @@
     #   ./secrets.nix
   ];
 
+
   homebrew = {
     enable = true;
     onActivation = {
       autoUpdate = true;
-      cleanup = "uninstall";
+      cleanup = "zap"; # was uninstall
       upgrade = true;
     };
+
     brewPrefix = "/opt/homebrew/bin";
+    taps = [
+      # "homebrew/services"
+    ];
     caskArgs = {
       no_quarantine = true;
     };
@@ -53,7 +58,7 @@
       "telegram"
       # "libreoffice"
       "signal"
-      # "grid"
+      "grid"
       # "google-chrome"
       # "handbrake"
       # "tailscale"
@@ -61,8 +66,7 @@
       # "element"
       # "microsoft-outlook"
       # "monitorcontrol"
-      "raycast"
-      "mattermost"
+      # "raycast"
       "freetube"
     ];
     brews = [
@@ -70,6 +74,24 @@
       "wget"
       "curl"
     ];
+
+
+       # Applications to install from Mac App Store using mas.
+    # You need to install all these Apps manually first so that your apple account have records for them.
+    # otherwise Apple Store will refuse to install them.
+    # For details, see https://github.com/mas-cli/mas
+    masApps = {
+      PaprikaRecipeManager3 = 1303222628;
+      # Xcode = 497799835;
+      # Wechat = 836500024;
+      # NeteaseCloudMusic = 944848654;
+      # QQ = 451108668;
+      # WeCom = 1189898970;  # Wechat for Work
+      # TecentMetting = 1484048379;
+      # QQMusic = 595615424;
+    };
+
+
   };
 
 

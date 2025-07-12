@@ -55,12 +55,13 @@
       # );
     in 
     lib.mkMerge [
-      (lib.mkDarwin "mw-mb-air-m2" inputs.nixpkgs-darwin
-        [
-          # dots/tmux
-          # dots/kitty
-        ]
+      (lib.mkDarwin
+        "mw-mb-air-m2"
+        inputs.nixpkgs-darwin
         [ ]
+        [
+
+        ]
       )
     ];
     # {
