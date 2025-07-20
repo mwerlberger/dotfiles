@@ -1,10 +1,12 @@
-# just is a command runner, Justfile is very similar to Makefile, but simpler.
-
+# All my hosts managed by nix
 darwin_hostname := "mw-mb-air-m2"
+nas_hostname := "sagittarius"
 
 # List all the just commands
 default:
   @just --list
+
+# DESKTOP / DARWIN related commands
 
 [group('desktop')]
 darwin-switch:
@@ -17,6 +19,24 @@ darwin-build:
 [group('desktop')]
 darwin-check:
   darwin-rebuild check --flake .#{{darwin_hostname}}
+
+# SERVER / NAS related commands
+
+[group('NAS')]
+nas-switch:
+  nixos-rebuild switch --flake .#{{nas_hostname}}
+
+[group('NAS')]
+nas-build:
+  nix build .#nixosConfigurations.{{nas_hostname}}.config.system.build.toplevel
+
+[group('NAS')]
+nas-deploy-dry-run:
+  deploy .#{{nas_hostname}} --dry-run
+
+[group('NAS')]
+nas-deploy:
+  deploy .#{{nas_hostname}}
 
 # ############################################################################
 # #
