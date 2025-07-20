@@ -66,7 +66,7 @@
       "freetube"
     ];
     brews = [
-      "pulumi"
+      # "pulumi"
       "wget"
       "curl"
     ];
