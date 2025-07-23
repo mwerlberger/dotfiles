@@ -27,6 +27,7 @@
     # caddy
     code-cursor
     cowsay
+    deploy-rs
     discord
     docker
     # docker-compose

@@ -13,7 +13,7 @@ let
     };
     home-manager.users.mw.imports = [
       # inputs.agenix.homeManagerModules.default
-      inputs.nix-index-database.hmModules.nix-index
+      inputs.nix-index-database.homeModules.nix-index
       ../home
       # ./users/mw/age.nix
     ] ++ extraImports;
@@ -22,7 +22,7 @@ let
   };
 in
 {
-  mkDarwin = machineHostname: nixpkgsVersion: extraHmModules: extraModules: {
+  mkDarwin = machineHostname: nixpkgsVersion: extraHomeModules: extraModules: {
     darwinConfigurations.${machineHostname} = inputs.nix-darwin.lib.darwinSystem {
       system = "aarch64-darwin";
       specialArgs = {
@@ -34,7 +34,7 @@ in
         ../hosts/darwin
         ../hosts/darwin/${machineHostname}
         inputs.home-manager-unstable.darwinModules.home-manager
-        (nixpkgsVersion.lib.attrsets.recursiveUpdate (homeManagerCfg true extraHmModules) {
+        (nixpkgsVersion.lib.attrsets.recursiveUpdate (homeManagerCfg true extraHomeModules) {
           home-manager.users.mw.home.homeDirectory = nixpkgsVersion.lib.mkForce "/Users/mw";
           home-manager.extraSpecialArgs = {
             username = "mw";
@@ -57,6 +57,7 @@ in
       system = "x86_64-linux";
       specialArgs = {
         inherit inputs;
+        username = "mw";
       };
       modules = [
         # ./homelab
