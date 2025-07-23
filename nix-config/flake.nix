@@ -62,11 +62,11 @@
         [ ]
         [ ]
       )
-      # (lib.mkNixos
-      #   "sagittarius"
-      #   inputs.nixpkgs-stable
-      #   [ ]
-      #   [ ]
-      # )
+      (lib.mkNixos
+        "sagittarius"
+        inputs.nixpkgs-stable
+        [ ]
+        [ ]
+      )
     ];
 }
