@@ -66,6 +66,7 @@
         "sagittarius"
         inputs.nixpkgs-stable
         [ ]
+        [ ]
       )
     ];
 }

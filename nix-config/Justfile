@@ -27,6 +27,14 @@ nas-switch:
   nixos-rebuild switch --flake .#{{nas_hostname}}
 
 [group('NAS')]
+nas-eval:
+  nix eval .#nixosConfigurations.{{nas_hostname}}.config.system.build.toplevel
+
+[group('NAS')]
+nas-build-dr:
+  nix build --dry-run .#nixosConfigurations.{{nas_hostname}}.config.system.build.toplevel
+
+[group('NAS')]
 nas-build:
   nix build .#nixosConfigurations.{{nas_hostname}}.config.system.build.toplevel
 

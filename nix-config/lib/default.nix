@@ -44,7 +44,7 @@ in
     };
   };
 
-  mkNixos = machineHostname: nixpkgsVersion: extraModules: rec {
+  mkNixos = machineHostname: nixpkgsVersion: extraHomeModules: extraModules: rec {
     deploy.nodes.${machineHostname} = {
       hostname = machineHostname;
       profiles.system = {
@@ -60,6 +60,8 @@ in
         username = "mw";
       };
       modules = [
+        # ../hosts/nixos
+        ../hosts/nixos/${machineHostname}
         # ./homelab
         # ./machines/nixos/_common
         # ./machines/nixos/${machineHostname}
@@ -69,7 +71,13 @@ in
         # ./modules/mover
         # inputs.agenix.nixosModules.default
         # ./users/mw
-        (homeManagerCfg false [ ])
+        inputs.home-manager-stable.nixosModules.home-manager
+        (nixpkgsVersion.lib.attrsets.recursiveUpdate (homeManagerCfg true extraHomeModules) {
+          home-manager.users.mw.home.homeDirectory = nixpkgsVersion.lib.mkForce "/home/mw";
+          home-manager.extraSpecialArgs = {
+            username = "mw";
+          };
+        })
       ] ++ extraModules;
     };
   };
