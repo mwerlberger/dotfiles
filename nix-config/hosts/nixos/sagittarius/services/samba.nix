@@ -12,9 +12,7 @@
         browseable = "yes";
         writable = "yes";
         "guest ok" = "no";
-        # Replace with your actual user(s)
-        "valid users" = [ "mw" ];
-
+        "valid users" = [ "mw" "@nas" ];
         # This part is crucial for ZFS!
         # It makes the .zfs/snapshot directory visible in the share.
         "vfs objects" = "zfs_fs";

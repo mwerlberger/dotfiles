@@ -59,6 +59,19 @@
     hashedPassword = "$y$j9T$mg90ljeF0GfEaJbNT81X1/$Tvkmsgs2Ogi.osNIN9qfNAmCxQlm8HplZL3tVLp/zjB";
   };
 
+  # Make sure the data lake permissions are set correctly
+  # Lets disable and see if we can do it purely with ZFS
+  # systemd.services.set-data-lake-permissions = {
+  #   description = "Set permissions for /data/lake ZFS dataset";
+  #   after = [ "zfs-mount.service" ];
+  #   wantedBy = [ "multi-user.target" ];
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #     ExecStart = "${pkgs.coreutils}/bin/chown mw:nas /data/lake";
+  #     ExecStartPost = "${pkgs.coreutils}/bin/chmod 0770 /data/lake";
+  #   };
+  # }; 
+
   networking.firewall.allowedTCPPorts = [
     3000 # Grafana
     9090 # Prometheus
