@@ -19,6 +19,16 @@
   networking.hostId = "5A6AE005"; # Must be set to a unique 8-char hex string for ZFS
   networking.hostName = "sagittarius"; # Define your hostname.
 
+  # /etc/nixos/configuration.nix
+  networking.interfaces.enp5s0 = {
+    ipv6.addresses = [
+      {
+        address = "2a02:168:ff46::10";
+        prefixLength = 64;
+      }
+    ];
+  };
+
   # Set your time zone.
   time.timeZone = "Europe/Zurich";
 
@@ -32,17 +42,6 @@
   #   font = "Lat2-Terminus16";
   #   keyMap = "us";
   #   useXkbConfig = true; # use xkb.options in tty.
-  # };
-
-  # Enable CUPS to print documents.
-  # services.printing.enable = true;
-
-  # Enable sound.
-  # services.pulseaudio.enable = true;
-  # OR
-  # services.pipewire = {
-  #   enable = true;
-  #   pulse.enable = true;
   # };
 
   security.sudo.wheelNeedsPassword = false;
