@@ -46,14 +46,10 @@
         name = "ghostty";
         greedy = true;
       }
-      {
-        name = "vivaldi";
-        greedy = true;
-      }
       # "notion"
-      "telegram"
+      # "telegram"
       # "libreoffice"
-      "signal"
+      # "signal"
       "grid"
       # "google-chrome"
       # "handbrake"
@@ -64,6 +60,8 @@
       # "monitorcontrol"
       # "raycast"
       "freetube"
+      "voiceink"
+      "zen"
     ];
     brews = [
       # "pulumi"
