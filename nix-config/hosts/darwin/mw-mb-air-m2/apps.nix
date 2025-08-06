@@ -59,6 +59,7 @@
     jq
     # jujutsu
     just
+    libation
     maccy
     neofetch
     neovim
