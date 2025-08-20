@@ -20,7 +20,7 @@
     # spotify
     # sqlite
     # utm
-    arc-browser
+    # arc-browser
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
     bat
     # caddy
@@ -59,6 +59,7 @@
     jq
     # jujutsu
     just
+    libation
     maccy
     neofetch
     neovim
@@ -88,6 +89,7 @@
     wget
     which
     xh
+    xld
     xz
     yq
     yq-go
