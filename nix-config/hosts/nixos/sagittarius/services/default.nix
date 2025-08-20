@@ -7,5 +7,6 @@
     ./ssh.nix
     ./samba.nix
     ./monitoring.nix
+    ./reverse-proxy.nix
   ];
 }

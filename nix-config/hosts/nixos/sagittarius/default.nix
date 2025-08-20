@@ -72,6 +72,8 @@
   # }; 
 
   networking.firewall.allowedTCPPorts = [
+    80   # HTTP (for ACME challenges and redirects)
+    443  # HTTPS (for reverse proxy)
     3000 # Grafana
     9090 # Prometheus
     445
