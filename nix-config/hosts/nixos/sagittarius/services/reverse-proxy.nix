@@ -38,7 +38,7 @@
     enable = true;
     
     # TODO: Replace with your email address for Let's Encrypt notifications
-    email = "your-email@example.com";
+    email = "web@werlberger.org";
     
     # Use Let's Encrypt production environment
     acmeCA = "https://acme-v02.api.letsencrypt.org/directory";
@@ -49,7 +49,8 @@
       {
         # Configure ACME to use Cloudflare DNS challenge
         # This allows certificates for internal services and wildcard domains
-        acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        acme_dns cloudflare {file.%C/cloudflare-api-token}
+        # acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
         
         # Optional: Enable admin API for debugging (remove in production)
         # admin localhost:2019
@@ -73,24 +74,24 @@
       
       # Grafana Dashboard
       # TODO: Uncomment and replace DOMAIN_NAME_HERE with your domain
-      # grafana.DOMAIN_NAME_HERE {
-      #   reverse_proxy localhost:3000 {
-      #     header_up Host {host}
-      #     header_up X-Real-IP {remote_host}
-      #     header_up X-Forwarded-For {remote_host}
-      #     header_up X-Forwarded-Proto {scheme}
-      #   }
-      #   
-      #   # Additional security headers for Grafana
-      #   header {
-      #     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-      #     Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' ws: wss:;"
-      #   }
-      # }
+      grafana.werlberger.org {
+        reverse_proxy localhost:3000 {
+          header_up Host {host}
+          header_up X-Real-IP {remote_host}
+          header_up X-Forwarded-For {remote_host}
+          header_up X-Forwarded-Proto {scheme}
+        }
+        
+        # Additional security headers for Grafana
+        header {
+          Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+          Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' ws: wss:;"
+        }
+      }
       
       # Prometheus Metrics (consider adding authentication)
       # TODO: Uncomment and replace DOMAIN_NAME_HERE with your domain
-      # prometheus.DOMAIN_NAME_HERE {
+      # prometheus.werlberger.org {
       #   # Optional: Add basic authentication for security
       #   # basicauth {
       #   #   # TODO: Replace with actual username and bcrypt password hash
@@ -111,7 +112,7 @@
       # }
       
       # TODO: Add additional services here using this template:
-      # SERVICE_NAME.DOMAIN_NAME_HERE {
+      # SERVICE_NAME.werlberger.org {
       #   # Optional authentication
       #   # basicauth {
       #   #   username $2a$14$hashed_password
@@ -130,22 +131,22 @@
       # }
       
       # Default handler for undefined subdomains (optional)
-      # *.DOMAIN_NAME_HERE {
+      # *.werlberger.org {
       #   respond "Service not available" 404
       # }
       
       # Root domain redirect (optional)
       # DOMAIN_NAME_HERE {
-      #   redir https://www.DOMAIN_NAME_HERE{uri} permanent
+      #   redir https://www.werlberger.org{uri} permanent
       # }
     '';
   };
 
   # Environment configuration for Caddy service
   # TODO: Replace with your actual Cloudflare API token
-  systemd.services.caddy.environment = {
-    CLOUDFLARE_API_TOKEN = "YOUR_CLOUDFLARE_API_TOKEN_HERE";
-  };
+  # systemd.services.caddy.environment = {
+  #   CLOUDFLARE_API_TOKEN = "1L56264Hx2COeWkdgF1SH2VUPE-ADaOSaqJKJT3s";
+  # };
 
   # TODO: For production, use systemd credentials instead of environment variables
   # This is more secure as it keeps the token in a protected file
@@ -154,12 +155,11 @@
   # 2. Set secure permissions: chmod 600 /etc/caddy/cloudflare-token
   # 3. Uncomment the following configuration:
   #
-  # systemd.services.caddy.serviceConfig = {
-  #   LoadCredential = [ "cloudflare-api-token:/etc/caddy/cloudflare-token" ];
-  # };
+  systemd.services.caddy.serviceConfig = {
+    LoadCredential = [ "cloudflare-api-token:/etc/caddy/cloudflare-token" ];
+  };
   #
   # 4. Update the acme_dns line in extraConfig to:
-  #    acme_dns cloudflare {file.%C/cloudflare-api-token}
 
   # Optional: Automatic certificate renewal check
   # Caddy handles this automatically, but you can add monitoring
