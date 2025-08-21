@@ -39,6 +39,9 @@
     };
     deploy-rs.url = "github:serokell/deploy-rs";
 
+  # Secrets management (encrypted with age/SSH keys)
+  agenix.url = "github:ryantm/agenix";
+
     # Homebrew including declarative tap management
     nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
     homebrew-core = {

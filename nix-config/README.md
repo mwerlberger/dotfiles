@@ -71,3 +71,19 @@ Related files:
 - [rich-demo/Justfile](/rich-demo/Justfile)
 - [rich-demo - homebrew's mirror settings](/rich-demo/modules/homebrew-mirror.nix)
 
+## Reverse proxy (Caddy) with Cloudflare DNS + agenix
+
+- ACME contact: admin+acme@werlberger.org
+- Secrets managed with agenix; Cloudflare token stored at `secrets/cloudflare-api-token.age` as KEY=VALUE env file.
+- Caddy plugin `caddy-dns/cloudflare` is compiled in; first build may require updating `vendorHash` as printed by the build.
+
+Steps:
+1) Create Cloudflare token with Zone:DNS:Edit for werlberger.org.
+2) Encrypt env file using age to `secrets/cloudflare-api-token.age` (see `secrets/README.md`).
+3) Ensure AAAA record for `sagittarius.werlberger.org` → 2a02:168:ff46::10 and desired subdomains.
+4) Deploy: `sudo nixos-rebuild switch --flake .#sagittarius` and update vendorHash if prompted.
+5) Access:
+   - https://sagittarius.werlberger.org (health)
+   - https://grafana.sagittarius.werlberger.org
+   - https://prom.sagittarius.werlberger.org
+
