@@ -2,7 +2,6 @@
 let
   # agenix-provided env file containing: CLOUDFLARE_API_TOKEN=...
   cfEnvFile = config.age.secrets.cloudflare-api-token.path or null;
-  caddyPluginsVendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # update after first build
 in
 {
   services.caddy = {
@@ -10,8 +9,8 @@ in
 
     # Build Caddy with Cloudflare DNS provider for ACME DNS-01
     package = pkgs.caddy.withPlugins {
-      plugins = [ "github.com/caddy-dns/cloudflare" ];
-      vendorHash = caddyPluginsVendorHash;
+      plugins = [ "github.com/caddy-dns/cloudflare@v0.2.1" ];
+      hash = "sha256-S1JN7brvH2KIu7DaDOH1zij3j8hWLLc0HdnUc+L89uU=";
     };
 
     # Global contact for ACME
