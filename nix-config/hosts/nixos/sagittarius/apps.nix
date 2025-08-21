@@ -18,7 +18,7 @@
     wget
     curl
     #git
-    #graphite-cli
+    graphite-cli
     just
     fish
     bat
