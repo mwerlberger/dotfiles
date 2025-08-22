@@ -57,4 +57,8 @@
   #   enable = true;
   #   enableSSHSupport = true;
   # };
+
+  # For VSCode remote server, we need to add a compatbility wrapper
+  programs.nix-ld.enable = true;
+  # programs.nix-ld-rs.enable = true;
 }

@@ -72,6 +72,8 @@
   # }; 
 
   networking.firewall.allowedTCPPorts = [
+    80  # HTTP for Caddy (redirect, challenge)
+    443 # HTTPS for Caddy
     3000 # Grafana
     9090 # Prometheus
     445
@@ -90,4 +92,14 @@
 
   # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
   system.stateVersion = "25.05"; # Did you read the comment?
+
+  # agenix: use host SSH key to decrypt secrets
+  age.identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+  # agenix secret providing CLOUDFLARE_API_TOKEN (as KEY=VALUE env file)
+  age.secrets.cloudflare-api-token = {
+    file = ../../../secrets/cloudflare-api-token.age;
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
 }

@@ -33,6 +33,7 @@ in
         # inputs.agenix-darwin.darwinModules.default
         ../hosts/darwin
         ../hosts/darwin/${machineHostname}
+        inputs.agenix.darwinModules.default
         inputs.home-manager-unstable.darwinModules.home-manager
         (nixpkgsVersion.lib.attrsets.recursiveUpdate (homeManagerCfg true extraHomeModules) {
           home-manager.users.mw.home.homeDirectory = nixpkgsVersion.lib.mkForce "/Users/mw";
@@ -69,7 +70,7 @@ in
         # ./modules/tg-notify
         # ./modules/auto-aspm
         # ./modules/mover
-        # inputs.agenix.nixosModules.default
+        inputs.agenix.nixosModules.default
         # ./users/mw
         inputs.home-manager-stable.nixosModules.home-manager
         (nixpkgsVersion.lib.attrsets.recursiveUpdate (homeManagerCfg true extraHomeModules) {
