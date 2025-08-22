@@ -72,8 +72,8 @@
   # }; 
 
   networking.firewall.allowedTCPPorts = [
-  80  # HTTP for Caddy (redirect, challenge)
-  443 # HTTPS for Caddy
+    80  # HTTP for Caddy (redirect, challenge)
+    443 # HTTPS for Caddy
     3000 # Grafana
     9090 # Prometheus
     445
