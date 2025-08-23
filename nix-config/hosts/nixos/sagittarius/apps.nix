@@ -30,6 +30,7 @@
     fzf
     skim
     delta
+    tcpdump
   ];
   programs.git = {
     enable = true;
