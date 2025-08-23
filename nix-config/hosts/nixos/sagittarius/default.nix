@@ -72,10 +72,12 @@
   # }; 
 
   networking.firewall.allowedTCPPorts = [
-    80  # HTTP for Caddy (redirect, challenge)
-    443 # HTTPS for Caddy
-    3000 # Grafana
-    9090 # Prometheus
+    # Public HTTP/HTTPS closed; access via Tailscale only
+    # 80  # HTTP for Caddy (redirect, challenge)
+    # 443 # HTTPS for Caddy
+    # Local service ports closed publicly; proxied via Caddy over Tailscale
+    # 3000 # Grafana
+    # 9090 # Prometheus
     445
     139 # Samba
   ];

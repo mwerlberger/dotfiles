@@ -1,58 +1,86 @@
-{ pkgs, config, ... }:
+{ pkgs, config, lib, ... }:
 let
   # agenix-provided env file containing: CLOUDFLARE_API_TOKEN=...
+  # Kept for later use, but not used while Cloudflare is disabled
   cfEnvFile = config.age.secrets.cloudflare-api-token.path or null;
+
+  # Disabled (kept for later): original Cloudflare-backed public vhosts
+  cfDisabledVirtualHosts = {
+    "https://sagittarius.werlberger.org" = {
+      extraConfig = ''
+        tls {
+          dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        }
+        encode zstd gzip
+        @root path /
+        respond @root "sagittarius up" 200
+      '';
+    };
+    "https://grafana.sagittarius.werlberger.org" = {
+      extraConfig = ''
+        tls {
+          dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        }
+        reverse_proxy http://127.0.0.1:3000
+      '';
+    };
+    "https://prom.sagittarius.werlberger.org" = {
+      extraConfig = ''
+        tls {
+          dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        }
+        reverse_proxy http://127.0.0.1:9090
+      '';
+    };
+  };
 in
 {
   services.caddy = {
     enable = true;
 
-    # Build Caddy with Cloudflare DNS provider for ACME DNS-01
+    # Build Caddy with Tailscale plugin to issue TLS from Tailscale
     package = pkgs.caddy.withPlugins {
-      plugins = [ "github.com/caddy-dns/cloudflare@v0.2.1" ];
-      hash = "sha256-S1JN7brvH2KIu7DaDOH1zij3j8hWLLc0HdnUc+L89uU=";
+      plugins = [ "github.com/mwerlberger/caddy-tailscale@v0.0.2" ];
+      # First build will fail with a hash mismatch and print the correct sha256; replace this value then.
+      hash = "sha256-I22/U6N2rEjorZA+tiVCxh7SIbmXtskSSfhjHMrIEqI=";
     };
 
-    # Global contact for ACME
+    # Global options: set contact email (unused by Tailscale certs) and ensure plugin order
     globalConfig = ''
-      email admin+acme@werlberger.org
+      email admin+tailscale@werlberger.org
+      order tls.get_certificate tailscale
     '';
 
+    # Tailscale-only access: single listener on :443, certs via Tailscale, path-based routing
     virtualHosts = {
-      # Base host – simple health page
-      "https://sagittarius.werlberger.org" = {
+      "https://:443" = {
         extraConfig = ''
           tls {
-            dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+            get_certificate tailscale
           }
-          encode zstd gzip
+
+          # Health root
           @root path /
-          respond @root "sagittarius up" 200
-        '';
-      };
+          respond @root "sagittarius (tailscale) up" 200
 
-      # Grafana reverse proxy
-      "https://grafana.sagittarius.werlberger.org" = {
-        extraConfig = ''
-          tls {
-            dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+          # Grafana at /grafana
+          @grafana path /grafana* 
+          handle @grafana {
+            uri strip_prefix /grafana
+            reverse_proxy http://127.0.0.1:3000
           }
-          reverse_proxy http://127.0.0.1:3000
-        '';
-      };
 
-      # Prometheus reverse proxy
-      "https://prom.sagittarius.werlberger.org" = {
-        extraConfig = ''
-          tls {
-            dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+          # Prometheus at /prom
+          @prom path /prom* /prometheus*
+          handle @prom {
+            uri strip_prefix /prom
+            reverse_proxy http://127.0.0.1:9090
           }
-          reverse_proxy http://127.0.0.1:9090
         '';
       };
     };
   };
 
-  # Provide Cloudflare token to Caddy from the agenix secret (KEY=VALUE file)
-  systemd.services.caddy.serviceConfig.EnvironmentFile = cfEnvFile;
+  # Cloudflare environment not applied while disabled
+  # systemd.services.caddy.serviceConfig.EnvironmentFile = cfEnvFile;
 }
