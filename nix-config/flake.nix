@@ -81,8 +81,8 @@
       (lib.mkNixos
         "sagittarius"
         inputs.nixpkgs-stable
-        [ ]
-        [ ]
+  [ ]
+  [ ./modules/tailscale.nix ]
       )
     ];
 }
