@@ -27,12 +27,12 @@
   # 3. Enable Grafana for visualization
   services.grafana = {
     enable = true;
-      settings = {
-        server = {
-          http_addr = "0.0.0.0";
-            # Serve Grafana at its own subdomain
-            root_url = "https://grafana.sagittarius.taildb4b48.ts.net/";
-        };
+    settings = {
+      server = {
+        http_addr = "0.0.0.0";
+        root_url = "https://sagittarius.taildb4b48.ts.net/grafana/";
+        serve_from_sub_path = true;
       };
+    };
   };
 }

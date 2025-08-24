@@ -7,6 +7,7 @@
     ./ssh.nix
     ./samba.nix
     ./monitoring.nix
-  ./caddy.nix
+    # ./caddy.nix
+    ./nginx.nix
   ];
 }
