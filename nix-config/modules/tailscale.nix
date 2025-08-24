@@ -1,4 +1,5 @@
 { config, pkgs, lib, ... }:
+
 {
   # Enable Tailscale daemon and open required firewall ports
   services.tailscale = {
@@ -10,6 +11,8 @@
 
   # Trust the Tailscale interface so internal services (e.g., Samba, Grafana) are reachable over Tailscale
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
+  # Only expose 443 to tailnet clients.
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 443 ];
 
   # Provide the CLI tools system-wide (handy for `tailscale status`, `tailscale up`, etc.)
   environment.systemPackages = [ pkgs.tailscale ];
@@ -24,4 +27,6 @@
     group = "root";
   };
   services.tailscale.authKeyFile = config.age.secrets.tailscale-authkey.path;
+
+
 }
