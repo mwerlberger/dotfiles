@@ -104,4 +104,11 @@
     owner = "root";
     group = "root";
   };
+
+  age.secrets.caddy-ts-auth-env = {
+    file = ../../../secrets/caddy-ts-auth.env.age;
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
 }
