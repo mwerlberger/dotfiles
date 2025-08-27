@@ -4,7 +4,7 @@ let
   # Immich must run at the root of a (sub)domain:contentReference[oaicite:3]{index=3}.
   # This host name will be used by Caddy to proxy requests and by Immich to
   # generate share links.  Adjust if you prefer another subdomain.
-  immichHost = "photos.sagittarius.taildb4b48.ts.net";
+  immichHost = "sagittarius.taildb4b48.ts.net";
 in
 {
   services.immich = {

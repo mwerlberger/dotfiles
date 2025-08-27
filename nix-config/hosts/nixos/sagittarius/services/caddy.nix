@@ -12,21 +12,56 @@
 
     globalConfig = ''
       email admin+caddy@werlberger.org
-      tailscale {
-        auth_key {env.TS_AUTHKEY}
-        ephemeral false
-      }
     '';
 
-    virtualHosts = {
-      "https://sagittarius.taildb4b48.ts.net" = {
+virtualHosts = {
+      "sagittarius.taildb4b48.ts.net" = {
         extraConfig = ''
-          bind tailscale/sagittarius
-          tls { get_certificate tailscale }
-          tailscale_auth
-          respond "sagittarius (tailscale) up" 200
+          bind 100.119.78.108
+          tls {
+            get_certificate tailscale
+          }
+          respond "sagittarius (tailscale) up" 200 
         '';
       };
+      "sagittarius.taildb4b48.ts.net:8443" = {
+        extraConfig = ''
+          bind 100.119.78.108
+          tls {
+            get_certificate tailscale
+          }
+          reverse_proxy 127.0.0.1:3000
+          # respond "grafana host matched" 200
+        '';
+      };
+      "sagittarius.taildb4b48.ts.net:8444" = {
+        extraConfig = ''
+          bind 100.119.78.108
+          tls {
+            get_certificate tailscale
+          }
+          reverse_proxy 127.0.0.1:2283
+        '';
+      };
+      # add more services similarly
+  
+  #     "https://sagittarius.taildb4b48.ts.net" = {
+  #       extraConfig = ''
+  #         bind tailscale
+  #         tls { get_certificate tailscale }
+  #         respond "sagittarius (tailscale) up" 200
+  #       '';
+  #     };
+
+    #   # Grafana
+    #   "grafana.sagittarius.taildb4b48.ts.net" = {
+    #     extraConfig = ''
+    #       bind tailscale
+    #       tls { get_certificate tailscale }
+    #       encode zstd gzip
+    #       reverse_proxy 127.0.0.1:3000
+    #     '';
+    #   };
 
       # # Use the node’s tailnet FQDN directly – no “sagittarius.”
       # "https://grafana.taildb4b48.ts.net" = {
@@ -101,4 +136,7 @@
   # Allow Caddy to read the tailscale certificates by running tailscaled with
   # TS_PERMIT_CERT_UID=caddy.
   services.tailscale.permitCertUid = "caddy";
+  # Ensure tailscaled is up before Caddy
+  systemd.services.caddy.after = [ "tailscaled.service" ];
+  systemd.services.caddy.requires = [ "tailscaled.service" ];
 }

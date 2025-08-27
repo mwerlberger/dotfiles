@@ -73,12 +73,7 @@
   # }; 
 
   networking.firewall.allowedTCPPorts = [
-    # Public HTTP/HTTPS closed; access via Tailscale only
-    # 80  # HTTP for Caddy (redirect, challenge)
-    # 443 # HTTPS for Caddy
-    # Local service ports closed publicly; proxied via Caddy over Tailscale
-    # 3000 # Grafana
-    # 9090 # Prometheus
+    22
     445
     139 # Samba
   ];
@@ -106,14 +101,21 @@
   #   group = "root";
   # };
 
-  age.secrets.caddy-ts-auth-env = {
-    file = ../../../secrets/caddy-ts-auth.env.age;
+  age.secrets.tailscale-authkey = {
+    file = ../../../secrets/tailscale-authkey.age;  # adjust path
     mode = "0400";
     owner = "root";
     group = "root";
   };
 
-  systemd.services.caddy.serviceConfig.EnvironmentFile = [
-    config.age.secrets.caddy-ts-auth-env.path
-  ];
+  # age.secrets.caddy-ts-auth-env = {
+  #   file = ../../../secrets/caddy-ts-auth.env.age;
+  #   mode = "0400";
+  #   owner = "root";
+  #   group = "root";
+  # };
+
+  # systemd.services.caddy.serviceConfig.EnvironmentFile = [
+  #   config.age.secrets.caddy-ts-auth-env.path
+  # ];
 }
