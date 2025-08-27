@@ -11,5 +11,5 @@
 
   # Trust the Tailscale interface so internal services (e.g., Samba, Grafana) are reachable over Tailscale
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 443 ];
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 443 ];
 }
