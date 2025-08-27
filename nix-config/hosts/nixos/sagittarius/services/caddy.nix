@@ -12,19 +12,24 @@
 
     globalConfig = ''
       email admin+caddy@werlberger.org
-      tailscale {
-        auth_key {env.TS_AUTHKEY}
-        ephemeral false
-      }
     '';
 
     virtualHosts = {
       "https://sagittarius.taildb4b48.ts.net" = {
         extraConfig = ''
-          bind tailscale/sagittarius
+          bind tailscale
           tls { get_certificate tailscale }
-          tailscale_auth
           respond "sagittarius (tailscale) up" 200
+        '';
+      };
+
+      # Grafana
+      "grafana.sagittarius.taildb4b48.ts.net" = {
+        extraConfig = ''
+          bind tailscale
+          tls { get_certificate tailscale }
+          encode zstd gzip
+          reverse_proxy 127.0.0.1:3000
         '';
       };
 

@@ -5,11 +5,12 @@
   services.tailscale = {
     enable = true;
     openFirewall = true; # opens UDP 41641 and allows tailscale0 traffic
-    # useRoutingFeatures = "client"; # set to "both" if you plan to advertise routes/exit-node
+    useRoutingFeatures = "client"; # set to "both" if you plan to advertise routes/exit-node
     # extraUpFlags = [ "--ssh" ]; # optional: enable Tailscale SSH
+    authKeyFile = config.age.secrets.tailscale-authkey.path;
   };
 
   # Trust the Tailscale interface so internal services (e.g., Samba, Grafana) are reachable over Tailscale
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
-  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 443 ];
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 80 443 ];
 }
