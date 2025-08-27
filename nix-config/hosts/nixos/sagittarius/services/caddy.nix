@@ -14,7 +14,7 @@
       email admin+caddy@werlberger.org
       tailscale {
         auth_key {env.TS_AUTHKEY}
-        ephemeral true
+        ephemeral false
       }
     '';
 
