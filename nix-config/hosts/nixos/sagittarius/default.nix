@@ -1,4 +1,5 @@
-{ pkgs
+{ config
+, pkgs
 , username
 , ...
 }:
@@ -98,12 +99,12 @@
   # agenix: use host SSH key to decrypt secrets
   age.identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
   # agenix secret providing CLOUDFLARE_API_TOKEN (as KEY=VALUE env file)
-  age.secrets.cloudflare-api-token = {
-    file = ../../../secrets/cloudflare-api-token.age;
-    mode = "0400";
-    owner = "root";
-    group = "root";
-  };
+  # age.secrets.cloudflare-api-token = {
+  #   file = ../../../secrets/cloudflare-api-token.age;
+  #   mode = "0400";
+  #   owner = "root";
+  #   group = "root";
+  # };
 
   age.secrets.caddy-ts-auth-env = {
     file = ../../../secrets/caddy-ts-auth.env.age;
@@ -111,4 +112,8 @@
     owner = "root";
     group = "root";
   };
+
+  systemd.services.caddy.serviceConfig.EnvironmentFile = [
+    config.age.secrets.caddy-ts-auth-env.path
+  ];
 }

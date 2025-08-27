@@ -62,7 +62,4 @@
   # Allow Caddy to read the tailscale certificates by running tailscaled with
   # TS_PERMIT_CERT_UID=caddy.
   services.tailscale.permitCertUid = "caddy";
-  systemd.services.caddy.serviceConfig.EnvironmentFile = [
-    config.age.secrets.tailscale-authkey.path
-  ];
 }
