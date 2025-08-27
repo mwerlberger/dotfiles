@@ -28,34 +28,34 @@
         '';
       };
 
-      # Use the node’s tailnet FQDN directly – no “sagittarius.”
-      "https://grafana.taildb4b48.ts.net" = {
-        extraConfig = ''
-          bind tailscale/grafana
-          tls { get_certificate tailscale }
-          tailscale_auth
-          reverse_proxy http://127.0.0.1:3000
-        '';
-      };
+      # # Use the node’s tailnet FQDN directly – no “sagittarius.”
+      # "https://grafana.taildb4b48.ts.net" = {
+      #   extraConfig = ''
+      #     bind tailscale/grafana
+      #     tls { get_certificate tailscale }
+      #     tailscale_auth
+      #     reverse_proxy http://127.0.0.1:3000
+      #   '';
+      # };
 
-      "https://prometheus.taildb4b48.ts.net" = {
-        extraConfig = ''
-          bind tailscale/prometheus
-          tls { get_certificate tailscale }
-          tailscale_auth
-          reverse_proxy http://127.0.0.1:9090
-        '';
-      };
+      # "https://prometheus.taildb4b48.ts.net" = {
+      #   extraConfig = ''
+      #     bind tailscale/prometheus
+      #     tls { get_certificate tailscale }
+      #     tailscale_auth
+      #     reverse_proxy http://127.0.0.1:9090
+      #   '';
+      # };
 
-      "https://photos.taildb4b48.ts.net" = {
-        extraConfig = ''
-          bind tailscale/photos
-          tls { get_certificate tailscale }
-          tailscale_auth
-          reverse_proxy http://127.0.0.1:2283
-        '';
-      };
-    };
+      # "https://photos.taildb4b48.ts.net" = {
+      #   extraConfig = ''
+      #     bind tailscale/photos
+      #     tls { get_certificate tailscale }
+      #     tailscale_auth
+      #     reverse_proxy http://127.0.0.1:2283
+      #   '';
+      # };
+    }; # virtualHosts
 
 
       # # Root site (optional).
