@@ -108,14 +108,14 @@
     group = "root";
   };
 
-  age.secrets.caddy-ts-auth-env = {
-    file = ../../../secrets/caddy-ts-auth.env.age;
-    mode = "0400";
-    owner = "root";
-    group = "root";
-  };
+  # age.secrets.caddy-ts-auth-env = {
+  #   file = ../../../secrets/caddy-ts-auth.env.age;
+  #   mode = "0400";
+  #   owner = "root";
+  #   group = "root";
+  # };
 
-  systemd.services.caddy.serviceConfig.EnvironmentFile = [
-    config.age.secrets.caddy-ts-auth-env.path
-  ];
+  # systemd.services.caddy.serviceConfig.EnvironmentFile = [
+  #   config.age.secrets.caddy-ts-auth-env.path
+  # ];
 }
