@@ -20,6 +20,11 @@ in
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.tailscale}/bin/tailscale cert --cert-file ${certDir}/${tsHost}.crt --key-file ${certDir}/${tsHost}.key ${tsHost}";
+      # Tailscale certificates are automatically owned root:root and nginx can't access them. Lets fix that here as post start.
+      ExecStartPost = [
+        "${pkgs.coreutils}/bin/chgrp nginx ${certDir}/${tsHost}.crt ${certDir}/${tsHost}.key"
+        "${pkgs.coreutils}/bin/chmod 640 ${certDir}/${tsHost}.crt ${certDir}/${tsHost}.key"
+      ];
     };
   };
 
