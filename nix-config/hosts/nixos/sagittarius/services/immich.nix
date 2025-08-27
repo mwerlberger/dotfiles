@@ -11,8 +11,8 @@ in
     enable = true;
     port = 2283;
     host = "127.0.0.1";
-    openFirewall = false;
-    settings.server.externalDomain = immichHost;
+    # openFirewall = false;
+    # settings.server.externalDomain = immichHost;
   };
 
   # No tmpfiles, no tailscale-cert service, no nginx configuration.
