@@ -30,8 +30,8 @@
     settings = {
       server = {
         http_addr = "0.0.0.0";
-        root_url = "https://sagittarius.taildb4b48.ts.net/grafana/";
-        serve_from_sub_path = true;
+        root_url = "https://grafana.sagittarius.taildb4b48.ts.net";
+        serve_from_sub_path = false;
       };
     };
   };
