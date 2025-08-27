@@ -1,8 +1,10 @@
 { config, pkgs, lib, ... }:
 
 let
+  # Immich must run at the root of a (sub)domain:contentReference[oaicite:3]{index=3}.
+  # This host name will be used by Caddy to proxy requests and by Immich to
+  # generate share links.  Adjust if you prefer another subdomain.
   immichHost = "photos.sagittarius.taildb4b48.ts.net";
-  certDir = "/var/lib/tailscale/certs";
 in
 {
   services.immich = {
@@ -10,54 +12,10 @@ in
     port = 2283;
     host = "127.0.0.1";
     openFirewall = false;
+    settings.server.externalDomain = immichHost;
   };
 
-  systemd.tmpfiles.rules = [
-    "d ${certDir} 0750 root nginx -"
-    "f ${certDir}/${immichHost}.crt 0640 root nginx -"
-    "f ${certDir}/${immichHost}.key 0640 root nginx -"
-  ];
+  # No tmpfiles, no tailscale-cert service, no nginx configuration.
+  # Caddy’s tailscale module handles TLS and proxying for the photos subdomain.
 
-  systemd.services."tailscale-cert-${immichHost}" = {
-    description = "Fetch/renew Tailscale cert for ${immichHost}";
-    after = [ "tailscaled.service" ];
-    requires = [ "tailscaled.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.tailscale}/bin/tailscale cert --cert-file ${certDir}/${immichHost}.crt --key-file ${certDir}/${immichHost}.key ${immichHost}";
-      ExecStartPost = [
-        "${pkgs.coreutils}/bin/chgrp nginx ${certDir}/${immichHost}.crt ${certDir}/${immichHost}.key"
-        "${pkgs.coreutils}/bin/chmod 640 ${certDir}/${immichHost}.crt ${certDir}/${immichHost}.key"
-      ];
-    };
-  };
-
-  systemd.timers."tailscale-cert-${immichHost}" = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
-    };
-  };
-
-  services.nginx.virtualHosts."${immichHost}" = {
-    serverName = immichHost;
-    addSSL = true;
-    sslCertificate = "${certDir}/${immichHost}.crt";
-    sslCertificateKey = "${certDir}/${immichHost}.key";
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString config.services.immich.port}";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
-      extraConfig = ''
-        client_max_body_size 50000M;
-        proxy_read_timeout   600s;
-        proxy_send_timeout   600s;
-        send_timeout         600s;
-      '';
-    };
-  };
-
-  systemd.services.nginx.after = lib.mkAfter [ "tailscale-cert-${immichHost}.service" ];
-  systemd.services.nginx.requires = lib.mkAfter [ "tailscale-cert-${immichHost}.service" ];
 }

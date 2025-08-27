@@ -6,7 +6,7 @@
   imports = [
     ./ssh.nix
     ./samba.nix
-    ./nginx.nix
+    ./caddy.nix
     ./monitoring.nix
     ./immich.nix
   ];
