@@ -11,7 +11,7 @@
     };
 
     globalConfig = ''
-      email admin+tailscale@werlberger.org
+      email admin+caddy@werlberger.org
       tailscale {
         auth_key {env.TS_AUTHKEY}
         ephemeral true
@@ -19,7 +19,6 @@
     '';
 
     virtualHosts = {
-      # Root site (optional).
       "https://sagittarius.taildb4b48.ts.net" = {
         extraConfig = ''
           bind tailscale/sagittarius
@@ -29,7 +28,8 @@
         '';
       };
 
-      "https://grafana.sagittarius.taildb4b48.ts.net" = {
+      # Use the node’s tailnet FQDN directly – no “sagittarius.”
+      "https://grafana.taildb4b48.ts.net" = {
         extraConfig = ''
           bind tailscale/grafana
           tls { get_certificate tailscale }
@@ -38,7 +38,7 @@
         '';
       };
 
-      "https://prometheus.sagittarius.taildb4b48.ts.net" = {
+      "https://prometheus.taildb4b48.ts.net" = {
         extraConfig = ''
           bind tailscale/prometheus
           tls { get_certificate tailscale }
@@ -47,8 +47,7 @@
         '';
       };
 
-      # Immich/Photos site
-      "https://photos.sagittarius.taildb4b48.ts.net" = {
+      "https://photos.taildb4b48.ts.net" = {
         extraConfig = ''
           bind tailscale/photos
           tls { get_certificate tailscale }
@@ -57,6 +56,46 @@
         '';
       };
     };
+
+
+      # # Root site (optional).
+      # "https://sagittarius.taildb4b48.ts.net" = {
+      #   extraConfig = ''
+      #     bind tailscale/sagittarius
+      #     tls { get_certificate tailscale }
+      #     tailscale_auth
+      #     respond "sagittarius (tailscale) up" 200
+      #   '';
+      # };
+
+      # "https://grafana.sagittarius.taildb4b48.ts.net" = {
+      #   extraConfig = ''
+      #     bind tailscale/grafana
+      #     tls { get_certificate tailscale }
+      #     tailscale_auth
+      #     reverse_proxy http://127.0.0.1:3000
+      #   '';
+      # };
+
+      # "https://prometheus.sagittarius.taildb4b48.ts.net" = {
+      #   extraConfig = ''
+      #     bind tailscale/prometheus
+      #     tls { get_certificate tailscale }
+      #     tailscale_auth
+      #     reverse_proxy http://127.0.0.1:9090
+      #   '';
+      # };
+
+      # # Immich/Photos site
+      # "https://photos.sagittarius.taildb4b48.ts.net" = {
+      #   extraConfig = ''
+      #     bind tailscale/photos
+      #     tls { get_certificate tailscale }
+      #     tailscale_auth
+      #     reverse_proxy http://127.0.0.1:2283
+      #   '';
+      # };
+    # };
   };
 
   # Allow Caddy to read the tailscale certificates by running tailscaled with
