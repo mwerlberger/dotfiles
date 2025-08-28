@@ -22,6 +22,7 @@
     # utm
     # arc-browser
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
+    agenix-cli
     bat
     chatgpt
     code-cursor
