@@ -23,7 +23,7 @@
     # arc-browser
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
     bat
-    # caddy
+    chatgpt
     code-cursor
     cowsay
     deploy-rs
@@ -31,6 +31,7 @@
     docker
     # docker-compose
     eza
+    fastfetch
     ffmpeg
     file
     fish
@@ -61,7 +62,6 @@
     just
     libation
     maccy
-    neofetch
     neovim
     nil
     nixfmt-rfc-style
@@ -83,6 +83,7 @@
     skim
     socat
     stats
+    # tailscale
     tmux
     tree
     unzip
