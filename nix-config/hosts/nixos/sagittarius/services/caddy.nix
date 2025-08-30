@@ -62,7 +62,14 @@
           tls {
             get_certificate tailscale
           }
-          reverse_proxy 127.0.0.1:2283
+          tailscale_auth
+          reverse_proxy 127.0.0.1:2283 {
+            # forward the usual proxy headers Immich expects
+            header_up Host {http.request.host}
+            header_up X-Real-IP {http.request.remote.host}
+            header_up X-Forwarded-For {http.request.remote.host}
+            header_up X-Forwarded-Proto {http.request.scheme}
+          }
         '';
       };
     };
