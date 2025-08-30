@@ -3,11 +3,15 @@
 {
   services.caddy = {
     enable = true;
-    # Build Caddy with the Tailscale plugin.  This plugin lets Caddy obtain
-    # and renew certificates from the local tailscaled daemon:contentReference[oaicite:4]{index=4}.
+
+    # Build Caddy with the Tailscale‑auth plugin (uses the system tailscaled).
     package = pkgs.caddy.withPlugins {
-      plugins = [ "github.com/tailscale/caddy-tailscale@v0.0.0-20250508175905-642f61fea3cc" ];
-      hash = "sha256-0GsjeeJnfLsJywWzWwJcCDk5wjTSBwzqMBY7iHjPQa8=";
+      plugins = [
+        "go.akpain.net/caddy-tailscale-auth@v0.1.7"
+      ];
+      # Ask Nix to compute the vendor hash automatically; replace with the
+      # real hash once you've run `nix build`.
+      hash = "sha256-eUJchDToSpfSs5TxbeuaITDLx3kWhIxyPgZpin3SUZc=";
     };
 
     globalConfig = ''
@@ -15,17 +19,17 @@
     '';
 
     virtualHosts = {
-      # Main host for various services
+      # Public status page
       "sagittarius.taildb4b48.ts.net" = {
         extraConfig = ''
           bind 100.119.78.108
           tls {
             get_certificate tailscale
           }
-          respond "sagittarius (tailscale) up" 200 
+          respond "sagittarius (tailscale) up" 200
         '';
       };
-      # Promoetheus
+      # Prometheus
       "sagittarius.taildb4b48.ts.net:8442" = {
         extraConfig = ''
           bind 100.119.78.108
@@ -35,15 +39,20 @@
           reverse_proxy 127.0.0.1:9090
         '';
       };
-      # Grafana
+      # Grafana with Tailscale auth
       "sagittarius.taildb4b48.ts.net:8443" = {
         extraConfig = ''
           bind 100.119.78.108
           tls {
             get_certificate tailscale
           }
-          reverse_proxy 127.0.0.1:3000
-          # respond "grafana host matched" 200
+          # Enforce that requests come from your tailnet and capture the user identity
+          tailscale_auth set_headers
+          reverse_proxy 127.0.0.1:3000 {
+            header_up X-Webauth-User {http.request.header.Tailscale-User-Login}
+            header_up X-Webauth-Name {http.request.header.Tailscale-User-Name}
+            header_up X-Webauth-Email {http.request.header.Tailscale-User-Login}
+          }
         '';
       };
       # Immich
@@ -56,14 +65,15 @@
           reverse_proxy 127.0.0.1:2283
         '';
       };
-      # add more services similarly
     };
   };
 
-  # Allow Caddy to read the tailscale certificates by running tailscaled with
-  # TS_PERMIT_CERT_UID=caddy.
+  # Let Caddy read Tailscale certificates.
   services.tailscale.permitCertUid = "caddy";
-  # Ensure tailscaled is up before Caddy
+  # Make sure tailscaled is running before Caddy starts.
   systemd.services.caddy.after = [ "tailscaled.service" ];
   systemd.services.caddy.requires = [ "tailscaled.service" ];
+
+  # Make the caddy user a member of the tailscale group so it can access the LocalAPI socket.
+  users.users.caddy.extraGroups = [ "tailscale" ];
 }
