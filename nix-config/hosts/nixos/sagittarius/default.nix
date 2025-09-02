@@ -110,16 +110,16 @@
 
   age.secrets.google-oauth-client-id = {
     file = ../../../secrets/google-oauth-client-id.age;  # adjust path
-    mode = "0400";
+    mode = "0440";
     owner = "root";
-    group = "root";
+    group = "nas";
   };
 
   age.secrets.google-oauth-client-secret = {
     file = ../../../secrets/google-oauth-client-secret.age;  # adjust path
-    mode = "0400";
-    owner = "root";
-    group = "root";
+    mode = "0440";
+    owner = "immich";
+    group = "nas";
   };
 
   # age.secrets.caddy-ts-auth-env = {
