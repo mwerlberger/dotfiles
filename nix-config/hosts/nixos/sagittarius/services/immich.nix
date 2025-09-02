@@ -11,6 +11,7 @@ in
     enable = true;
     port = 2283;
     host = "127.0.0.1";
+    mediaLocation = "/data/lake/photos/immich";
     
     settings = {
       # External URL where Immich is served; required for share links.
@@ -36,6 +37,9 @@ in
     };
 
   };
+
+  # Add immich user to nas group for media directory access
+  users.users.${config.services.immich.user}.extraGroups = [ "nas" ];
 
   # Create runtime directory and secrets file for Immich OAuth
   systemd.tmpfiles.rules = [
