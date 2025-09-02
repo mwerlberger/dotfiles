@@ -32,6 +32,7 @@
     skim
     delta
     tcpdump
+    claude-code
   ];
   programs.git = {
     enable = true;
