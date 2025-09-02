@@ -11,22 +11,12 @@ in
     enable = true;
     port = 2283;
     host = "127.0.0.1";
+    mediaLocation = "/data/lake/photos/immich";
     
     settings = {
       # External URL where Immich is served; required for share links.
       server = {
         externalDomain = "https://sagittarius.taildb4b48.ts.net:8444";
-      };
-
-      # OAuth configuration for Google.  Note: Google does NOT allow the
-      # app.immich:// scheme, so mobile OAuth won't work.
-      oauth = {
-        enabled      = true;
-        issuerUrl    = "https://accounts.google.com";
-        scope        = "openid email profile";
-        autoRegister = true;
-        # Do not set mobileRedirectUri here; Google cannot redirect to app.immich.
-        buttonText   = "Login with Google";
       };
 
       # Optionally disable local password login to enforce SSO
@@ -35,13 +25,27 @@ in
       };
     };
 
-    # Use secretsFile to provide OAuth secrets via environment variables
-    secretsFile = "/run/immich/secrets.env";
+    # OAuth configuration via environment variables (secrets provided via EnvironmentFile)
+    environment = {
+      OAUTH_ENABLED = "true";
+      OAUTH_ISSUER_URL = "https://accounts.google.com";
+      OAUTH_SCOPE = "openid email profile";
+      OAUTH_AUTO_REGISTER = "true";
+      OAUTH_BUTTON_TEXT = "Login with Google";
+    };
+
   };
 
-  # Create the secrets environment file with agenix secrets
+  # Add immich user to nas group for media directory access
+  users.users.${config.services.immich.user}.extraGroups = [ "nas" ];
+
+  # Create runtime directory and secrets file for Immich OAuth
+  systemd.tmpfiles.rules = [
+    "d /var/lib/immich-secrets 0750 ${config.services.immich.user} ${config.services.immich.group} -"
+  ];
+
   systemd.services.immich-secrets = {
-    description = "Generate Immich secrets environment file";
+    description = "Generate Immich OAuth secrets";
     wantedBy = [ "immich-server.service" ];
     before = [ "immich-server.service" ];
     serviceConfig = {
@@ -49,12 +53,15 @@ in
       RemainAfterExit = true;
     };
     script = ''
-      mkdir -p /run/immich
-      cat > /run/immich/secrets.env << EOF
+      cat > /var/lib/immich-secrets/oauth.env << EOF
 OAUTH_CLIENT_ID=$(cat ${config.age.secrets.google-oauth-client-id.path})
 OAUTH_CLIENT_SECRET=$(cat ${config.age.secrets.google-oauth-client-secret.path})
 EOF
-      chmod 600 /run/immich/secrets.env
+      chown ${config.services.immich.user}:${config.services.immich.group} /var/lib/immich-secrets/oauth.env
+      chmod 600 /var/lib/immich-secrets/oauth.env
     '';
   };
+
+  # Configure immich-server to use the secrets environment file
+  systemd.services.immich-server.serviceConfig.EnvironmentFile = "/var/lib/immich-secrets/oauth.env";
 }
