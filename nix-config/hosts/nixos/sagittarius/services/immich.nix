@@ -35,13 +35,15 @@ in
       };
     };
 
-    # Use secretsFile to provide OAuth secrets via environment variables
-    secretsFile = "/run/immich/secrets.env";
   };
 
-  # Create the secrets environment file with agenix secrets
+  # Create runtime directory and secrets file for Immich OAuth
+  systemd.tmpfiles.rules = [
+    "d /var/lib/immich-secrets 0750 ${config.services.immich.user} ${config.services.immich.group} -"
+  ];
+
   systemd.services.immich-secrets = {
-    description = "Generate Immich secrets environment file";
+    description = "Generate Immich OAuth secrets";
     wantedBy = [ "immich-server.service" ];
     before = [ "immich-server.service" ];
     serviceConfig = {
@@ -49,12 +51,15 @@ in
       RemainAfterExit = true;
     };
     script = ''
-      mkdir -p /run/immich
-      cat > /run/immich/secrets.env << EOF
+      cat > /var/lib/immich-secrets/oauth.env << EOF
 OAUTH_CLIENT_ID=$(cat ${config.age.secrets.google-oauth-client-id.path})
 OAUTH_CLIENT_SECRET=$(cat ${config.age.secrets.google-oauth-client-secret.path})
 EOF
-      chmod 600 /run/immich/secrets.env
+      chown ${config.services.immich.user}:${config.services.immich.group} /var/lib/immich-secrets/oauth.env
+      chmod 600 /var/lib/immich-secrets/oauth.env
     '';
   };
+
+  # Configure immich-server to use the secrets environment file
+  systemd.services.immich-server.serviceConfig.EnvironmentFile = "/var/lib/immich-secrets/oauth.env";
 }
