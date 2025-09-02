@@ -19,21 +19,19 @@ in
         externalDomain = "https://sagittarius.taildb4b48.ts.net:8444";
       };
 
-      # OAuth configuration for Google.  Note: Google does NOT allow the
-      # app.immich:// scheme, so mobile OAuth won't work.
-      oauth = {
-        enabled      = true;
-        issuerUrl    = "https://accounts.google.com";
-        scope        = "openid email profile";
-        autoRegister = true;
-        # Do not set mobileRedirectUri here; Google cannot redirect to app.immich.
-        buttonText   = "Login with Google";
-      };
-
       # Optionally disable local password login to enforce SSO
       passwordLogin = {
         enabled = false;
       };
+    };
+
+    # OAuth configuration via environment variables (secrets provided via EnvironmentFile)
+    environment = {
+      OAUTH_ENABLED = "true";
+      OAUTH_ISSUER_URL = "https://accounts.google.com";
+      OAUTH_SCOPE = "openid email profile";
+      OAUTH_AUTO_REGISTER = "true";
+      OAUTH_BUTTON_TEXT = "Login with Google";
     };
 
   };
