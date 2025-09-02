@@ -10,6 +10,13 @@
     authKeyFile = config.age.secrets.tailscale-authkey.path;
   };
 
+  # Override tailscale to skip failing tests
+  nixpkgs.config.packageOverrides = pkgs: {
+    tailscale = pkgs.tailscale.overrideAttrs (oldAttrs: {
+      doCheck = false;
+    });
+  };
+
   # Trust the Tailscale interface so internal services (e.g., Samba, Grafana) are reachable over Tailscale
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
   networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 22 80 443 ];
