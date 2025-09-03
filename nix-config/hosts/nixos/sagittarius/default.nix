@@ -76,6 +76,7 @@
     22
     445
     139 # Samba
+    8444  # Immich local LAN access
   ];
   networking.firewall.allowedUDPPorts = [
     137
