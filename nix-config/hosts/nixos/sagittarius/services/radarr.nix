@@ -4,16 +4,9 @@
   services.radarr = {
     enable = true;
     openFirewall = false;
-    user = "radarr";
-    group = "nas";
   };
 
-  # Create radarr user and ensure it's in nas group
-  users.users.radarr = {
-    isSystemUser = true;
-    group = "nas";
-    extraGroups = [ "nas" ];
-  };
+  # The radarr service will create its own user automatically
 
   # Ensure data directory exists with proper permissions
   systemd.tmpfiles.rules = [
@@ -27,8 +20,26 @@
     requires = [ "wg-vpn.service" ];
     serviceConfig = {
       NetworkNamespacePath = "/var/run/netns/vpn";
-      PrivateNetwork = true;
+      PrivateNetwork = lib.mkForce true;
     };
+  };
+
+  # Add radarr user to nas group after service creates the user
+  systemd.services.radarr-fix-groups = {
+    description = "Add radarr user to nas group";
+    after = [ "radarr.service" ];
+    wants = [ "radarr.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = "
+      if id radarr >/dev/null 2>&1; then
+        ${pkgs.shadow}/bin/usermod -a -G nas radarr
+      else
+        echo 'radarr user not found, skipping'
+      fi
+    ";
   };
 
   # Reverse proxy configuration

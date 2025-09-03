@@ -33,6 +33,7 @@
     delta
     tcpdump
     claude-code
+    wireguard-tools
   ];
   programs.git = {
     enable = true;

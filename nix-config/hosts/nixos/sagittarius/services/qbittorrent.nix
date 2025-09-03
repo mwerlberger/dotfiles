@@ -4,17 +4,9 @@
   services.qbittorrent = {
     enable = true;
     openFirewall = false;
-    user = "qbittorrent";
-    group = "nas";
-    port = 8080;
   };
 
-  # Create qbittorrent user and ensure it's in nas group
-  users.users.qbittorrent = {
-    isSystemUser = true;
-    group = "nas";
-    extraGroups = [ "nas" ];
-  };
+  # The qbittorrent service will create its own user automatically
 
   # Ensure data directories exist with proper permissions
   systemd.tmpfiles.rules = [
@@ -30,8 +22,26 @@
     requires = [ "wg-vpn.service" ];
     serviceConfig = {
       NetworkNamespacePath = "/var/run/netns/vpn";
-      PrivateNetwork = true;
+      PrivateNetwork = lib.mkForce true;
     };
+  };
+
+  # Add qbittorrent user to nas group after service creates the user
+  systemd.services.qbittorrent-fix-groups = {
+    description = "Add qbittorrent user to nas group";
+    after = [ "qbittorrent.service" ];
+    wants = [ "qbittorrent.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = "
+      if id qbittorrent >/dev/null 2>&1; then
+        ${pkgs.shadow}/bin/usermod -a -G nas qbittorrent
+      else
+        echo 'qbittorrent user not found, skipping'
+      fi
+    ";
   };
 
   # Reverse proxy configuration

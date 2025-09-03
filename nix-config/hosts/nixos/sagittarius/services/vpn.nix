@@ -27,42 +27,44 @@
       ExecStart = pkgs.writeShellScript "wg-vpn-start" ''
         set -e
         
+        # Clean up any existing interfaces
+        ${pkgs.iproute2}/bin/ip link delete veth-host 2>/dev/null || true
+        ${pkgs.iproute2}/bin/ip -n vpn link delete wg-mullvad 2>/dev/null || true
+        
         # Create veth pair for namespace communication
         ${pkgs.iproute2}/bin/ip link add veth-vpn type veth peer name veth-host
         ${pkgs.iproute2}/bin/ip link set veth-vpn netns vpn
         
         # Configure host side
-        ${pkgs.iproute2}/bin/ip addr add 192.168.100.1/24 dev veth-host
+        ${pkgs.iproute2}/bin/ip addr add 192.168.100.1/24 dev veth-host || true
         ${pkgs.iproute2}/bin/ip link set veth-host up
         
         # Configure namespace side
-        ${pkgs.iproute2}/bin/ip -n vpn addr add 192.168.100.2/24 dev veth-vpn
+        ${pkgs.iproute2}/bin/ip -n vpn addr add 192.168.100.2/24 dev veth-vpn || true
         ${pkgs.iproute2}/bin/ip -n vpn link set veth-vpn up
         ${pkgs.iproute2}/bin/ip -n vpn link set lo up
         
         # Add default route through host
-        ${pkgs.iproute2}/bin/ip -n vpn route add default via 192.168.100.1
+        ${pkgs.iproute2}/bin/ip -n vpn route add default via 192.168.100.1 || true
         
         # Create WireGuard interface in namespace
         ${pkgs.iproute2}/bin/ip -n vpn link add wg-mullvad type wireguard
-        ${pkgs.iproute2}/bin/ip -n vpn addr add 10.75.190.152/32 dev wg-mullvad
-        ${pkgs.iproute2}/bin/ip -n vpn addr add fc00:bbbb:bbbb:bb01::c:be97/128 dev wg-mullvad
         
-        # Configure WireGuard
-        ${pkgs.wireguard-tools}/bin/wg set wg-mullvad \
-          private-key <(echo "WAarVIXWryj0dB94BW81QA40kr9FpAMX3XMZW/d2wk4=") \
-          peer zfNQqDyPmSUY8+20wxACe/wpk4Q5jpZm5iBqjXj2hk8= \
-          allowed-ips 0.0.0.0/0,::0/0 \
-          endpoint "[2a02:6ea0:d406:4::a21f]:51820"
+        # Create WireGuard config without Address/DNS lines for wg setconf
+        grep -E "^\[(Interface|Peer)\]|^PrivateKey|^PublicKey|^AllowedIPs|^Endpoint" ${config.age.secrets.mullvad-zrh.path} > /tmp/wg-config
+        ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.wireguard-tools}/bin/wg setconf wg-mullvad /tmp/wg-config
+        rm -f /tmp/wg-config
         
+        ${pkgs.iproute2}/bin/ip -n vpn addr add 10.75.190.152/32 dev wg-mullvad || true
+        ${pkgs.iproute2}/bin/ip -n vpn addr add fc00:bbbb:bbbb:bb01::c:be97/128 dev wg-mullvad || true
         ${pkgs.iproute2}/bin/ip -n vpn link set wg-mullvad up
         
         # Replace default route with VPN
-        ${pkgs.iproute2}/bin/ip -n vpn route del default via 192.168.100.1
-        ${pkgs.iproute2}/bin/ip -n vpn route add default dev wg-mullvad
+        ${pkgs.iproute2}/bin/ip -n vpn route del default via 192.168.100.1 || true
+        ${pkgs.iproute2}/bin/ip -n vpn route add default dev wg-mullvad || true
         
         # Add route back to host for local communication
-        ${pkgs.iproute2}/bin/ip -n vpn route add 192.168.100.0/24 via 192.168.100.1 dev veth-vpn
+        ${pkgs.iproute2}/bin/ip -n vpn route add 192.168.100.0/24 via 192.168.100.1 dev veth-vpn || true
       '';
       ExecStop = pkgs.writeShellScript "wg-vpn-stop" ''
         ${pkgs.iproute2}/bin/ip link delete veth-host || true
