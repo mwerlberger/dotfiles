@@ -12,11 +12,11 @@ in
   };
 
   # Add jellyfin user to nas group for media directory access
-  users.users.${config.services.jellyfin.user}.extraGroups = [ "nas" ];
+  users.users.${config.services.jellyfin.user}.extraGroups = [ "media" "nas" ];
 
   # Ensure media directory exists and has proper permissions
   systemd.tmpfiles.rules = [
-    "d /data/lake/media/jellyfin 0770 jellyfin nas -"
+    "d /data/lake/media/jellyfin 0770 jellyfin media -"
     "d /var/lib/jellyfin-secrets 0750 ${config.services.jellyfin.user} ${config.services.jellyfin.group} -"
   ];
 

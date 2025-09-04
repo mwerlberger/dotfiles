@@ -38,6 +38,7 @@
       inputs.nixpkgs.follows = "nixpkgs-stable";
     };
     deploy-rs.url = "github:serokell/deploy-rs";
+    nixarr.url = "github:rasmus-kirk/nixarr";
 
   # Secrets management (encrypted with age/SSH keys)
   agenix.url = "github:ryantm/agenix";
@@ -82,7 +83,10 @@
         "sagittarius"
         inputs.nixpkgs-stable
   [ ]
-  [ ./modules/tailscale.nix ]
+  [ 
+    ./modules/tailscale.nix
+    inputs.nixarr.nixosModules.default
+  ]
       )
     ];
 }
