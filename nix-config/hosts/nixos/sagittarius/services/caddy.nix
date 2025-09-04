@@ -72,6 +72,19 @@
           }
         '';
       };
+      # Immich: Local LAN
+      "192.168.1.206:8444" = {
+        extraConfig = ''
+          bind 192.168.1.206
+          tls internal  # Uses Caddy's internal CA for LAN
+          reverse_proxy 127.0.0.1:2283 {
+            header_up Host {http.request.host}
+            header_up X-Real-IP {http.request.remote.host}
+            header_up X-Forwarded-For {http.request.remote.host}
+            header_up X-Forwarded-Proto {http.request.scheme}
+          }
+        '';
+      };
     };
   };
 
