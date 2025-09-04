@@ -6,6 +6,24 @@
     openFirewall = false;
   };
 
+  # Disable qBittorrent WebUI authentication since Tailscale provides security
+  systemd.services.qbittorrent-disable-auth = {
+    description = "Disable qBittorrent WebUI authentication";
+    after = [ "qbittorrent.service" ];
+    wants = [ "qbittorrent.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      sleep 10
+      # Disable WebUI authentication via preferences API
+      ${pkgs.curl}/bin/curl -X POST "http://192.168.100.2:8080/api/v2/app/setPreferences" \
+        -H "Content-Type: application/json" \
+        -d '{"web_ui_username":"","web_ui_password":"","bypass_local_auth":true,"bypass_auth_subnet_whitelist":"192.168.100.0/24"}' || true
+    '';
+  };
+
   # The qbittorrent service will create its own user automatically
 
   # Ensure data directories exist with proper permissions
@@ -51,12 +69,16 @@
       tls {
         get_certificate tailscale
       }
-      tailscale_auth
+      tailscale_auth set_headers
       reverse_proxy 192.168.100.2:8080 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote.host}
         header_up X-Forwarded-For {http.request.remote.host}
         header_up X-Forwarded-Proto {http.request.scheme}
+        header_up X-Webauth-User {http.request.header.Tailscale-User-Login}
+        header_up X-Webauth-Name {http.request.header.Tailscale-User-Name}
+        header_up X-Webauth-Email {http.request.header.Tailscale-User-Login}
+        header_up Remote-User {http.request.header.Tailscale-User-Login}
       }
     '';
   };

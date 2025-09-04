@@ -6,6 +6,24 @@
     openFirewall = false;
   };
 
+  # Disable Sonarr authentication since Tailscale provides security
+  systemd.services.sonarr-disable-auth = {
+    description = "Disable Sonarr authentication";
+    after = [ "sonarr.service" ];
+    wants = [ "sonarr.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      sleep 10
+      # Disable authentication via API
+      ${pkgs.curl}/bin/curl -X PUT "http://192.168.100.2:8989/api/v3/config/host" \
+        -H "Content-Type: application/json" \
+        -d '{"authenticationMethod": "None"}' || true
+    '';
+  };
+
   # The sonarr service will create its own user automatically
 
   # Ensure data directory exists with proper permissions
@@ -49,12 +67,16 @@
       tls {
         get_certificate tailscale
       }
-      tailscale_auth
+      tailscale_auth set_headers
       reverse_proxy 192.168.100.2:8989 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote.host}
         header_up X-Forwarded-For {http.request.remote.host}
         header_up X-Forwarded-Proto {http.request.scheme}
+        header_up X-Webauth-User {http.request.header.Tailscale-User-Login}
+        header_up X-Webauth-Name {http.request.header.Tailscale-User-Name}
+        header_up X-Webauth-Email {http.request.header.Tailscale-User-Login}
+        header_up Remote-User {http.request.header.Tailscale-User-Login}
       }
     '';
   };
