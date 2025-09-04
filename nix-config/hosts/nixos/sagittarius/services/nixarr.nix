@@ -49,6 +49,12 @@
       enable = true;
     };
 
+    audiobookshelf = {
+      enable = true;
+      openFirewall = false; # We'll use reverse proxy instead
+      # Optional: specify a custom port if needed
+    };
+
     transmission = {
       enable = true;
       # Use transmission instead of qbittorrent as it's better supported by nixarr
@@ -61,8 +67,33 @@
     # Use default stateDir location instead of custom path
   };
 
-  # Disable authentication for all arr services since Tailscale provides security
+  # Configure systemd services for proper ordering and reliability
   systemd.services = {
+    # Fix VPN service to prevent interference with Caddy/Tailscale
+    wg = {
+      # Ensure VPN starts after network is fully ready and doesn't block Caddy
+      after = [ "network-online.target" "tailscaled.service" ];
+      wants = [ "network-online.target" ];
+      before = [ ]; # Remove any dependencies that might block Caddy
+      # Add timeout to prevent indefinite hanging
+      serviceConfig = {
+        TimeoutStartSec = "60s";
+        TimeoutStopSec = "30s";
+        Restart = "on-failure";
+        RestartSec = "10s";
+        StartLimitBurst = 3;
+        StartLimitIntervalSec = 300;
+      };
+    };
+
+    # Ensure Caddy starts independently of VPN
+    caddy = {
+      after = [ "tailscaled.service" ];
+      # Remove any dependency on VPN service
+      conflicts = [ ];
+    };
+
+    # Disable authentication for all arr services since Tailscale provides security
     prowlarr-disable-auth = {
       description = "Disable Prowlarr authentication";
       after = [ "prowlarr.service" ];
@@ -116,7 +147,7 @@
 
   # Setting up the reverse proxy for nixarr services in Caddy
   # Transmission on :4999
-  services.caddy.virtualHosts."sagittarius.taildb4b48.ts.net:4999" = {
+  services.caddy.virtualHosts."sagittarius.taildb4b48.ts.net:8499" = {
     extraConfig = ''
       bind 100.119.78.108
       tls {
@@ -181,6 +212,25 @@
       }
       tailscale_auth set_headers
       reverse_proxy 127.0.0.1:9696 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote.host}
+        header_up X-Forwarded-For {http.request.remote.host}
+        header_up X-Forwarded-Proto {http.request.scheme}
+        header_up X-Webauth-User {http.request.header.Tailscale-User-Login}
+        header_up X-Webauth-Name {http.request.header.Tailscale-User-Name}
+        header_up X-Webauth-Email {http.request.header.Tailscale-User-Login}
+      }
+    '';
+  };
+  # Audiobookshelf on :8503
+  services.caddy.virtualHosts."sagittarius.taildb4b48.ts.net:8503" = {
+    extraConfig = ''
+      bind 100.119.78.108
+      tls {
+        get_certificate tailscale
+      }
+      tailscale_auth set_headers
+      reverse_proxy 127.0.0.1:9292 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote.host}
         header_up X-Forwarded-For {http.request.remote.host}
