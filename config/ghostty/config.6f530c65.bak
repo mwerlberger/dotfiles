@@ -49,4 +49,3 @@ keybind = cmd+s>e=equalize_splits
 
 # other
 copy-on-select = clipboard
-keybind = shift+enter=text:\n
