@@ -67,8 +67,6 @@
             # forward the usual proxy headers Immich expects
             header_up Host {http.request.host}
             header_up X-Real-IP {http.request.remote.host}
-            header_up X-Forwarded-For {http.request.remote.host}
-            header_up X-Forwarded-Proto {http.request.scheme}
           }
         '';
       };
@@ -80,8 +78,6 @@
           reverse_proxy 127.0.0.1:2283 {
             header_up Host {http.request.host}
             header_up X-Real-IP {http.request.remote.host}
-            header_up X-Forwarded-For {http.request.remote.host}
-            header_up X-Forwarded-Proto {http.request.scheme}
           }
         '';
       };
@@ -90,9 +86,18 @@
 
   # Let Caddy read Tailscale certificates.
   services.tailscale.permitCertUid = "caddy";
-  # Make sure tailscaled is running before Caddy starts.
-  systemd.services.caddy.after = [ "tailscaled.service" ];
+  # Make sure tailscaled is running and network is ready before Caddy starts.
+  systemd.services.caddy.after = [ "tailscaled.service" "network-online.target" ];
   systemd.services.caddy.requires = [ "tailscaled.service" ];
+  systemd.services.caddy.wants = [ "network-online.target" ];
+  
+  # Add retry logic for startup failures
+  systemd.services.caddy.serviceConfig = {
+    Restart = "on-failure";
+    RestartSec = "5s";
+    RestartMaxDelaySec = "30s";
+    RestartSteps = "3";
+  };
 
   # Make the caddy user a member of the tailscale group so it can access the LocalAPI socket.
   users.users.caddy.extraGroups = [ "tailscale" ];
