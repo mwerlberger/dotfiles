@@ -19,9 +19,7 @@
   # 2. Enable the node_exporter to collect system metrics
   services.prometheus.exporters.node = {
     enable = true;
-    enabledCollectors = [ "systemd" "zfs" ]; # Add other collectors as needed
-    # To monitor drive temperatures, you may need to enable the textfile collector
-    # and use a script that outputs metrics in the Prometheus format.
+    enabledCollectors = [ "systemd" "zfs" "textfile" "filesystem" "loadavg" "meminfo" "netdev" "stat" ];
   };
 
   # 3. Enable Grafana for visualization
@@ -48,4 +46,5 @@
       };
     };
   };
+
 }
