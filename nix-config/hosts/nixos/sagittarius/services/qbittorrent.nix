@@ -65,7 +65,6 @@
   # Reverse proxy configuration
   services.caddy.virtualHosts."sagittarius.taildb4b48.ts.net:8080" = {
     extraConfig = ''
-      bind 100.119.78.108
       tls {
         get_certificate tailscale
       }
