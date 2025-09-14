@@ -3,7 +3,8 @@
 {
   services.homepage-dashboard = {
     enable = true;
-    listenPort = 8441;
+    listenPort = 8082;
+    
     
     settings = {
       title = "Sagittarius NAS Dashboard";
@@ -180,11 +181,16 @@
         get_certificate tailscale
       }
       tailscale_auth set_headers
-      reverse_proxy 127.0.0.1:8441 {
+      reverse_proxy 127.0.0.1:8082 {
         header_up X-Webauth-User {http.request.header.Tailscale-User-Login}
         header_up X-Webauth-Name {http.request.header.Tailscale-User-Name}
         header_up X-Webauth-Email {http.request.header.Tailscale-User-Login}
       }
     '';
+  };
+
+  # Configure environment variables for homepage service
+  systemd.services.homepage-dashboard.environment = {
+    HOMEPAGE_ALLOWED_HOSTS = lib.mkForce "localhost:8082,127.0.0.1:8082,sagittarius.taildb4b48.ts.net:8441";
   };
 }

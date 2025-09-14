@@ -26,6 +26,18 @@
 
   services.grafana = {
     enable = true;
+    provision = {
+      enable = true;
+      datasources.settings.datasources = [
+        {
+          name = "Prometheus";
+          type = "prometheus";
+          access = "proxy";
+          url = "http://127.0.0.1:9090";
+          isDefault = true;
+        }
+      ];
+    };
     settings = {
       "auth.proxy" = {
         enabled = true;
@@ -35,6 +47,13 @@
         whitelist = "127.0.0.1";
         headers = "Name:X-Webauth-Name,Email:X-Webauth-Email";
         enable_login_token = false;
+      };
+      
+      users = {
+        # Set default role for new users
+        default_role = "Admin";
+        # Admin users
+        admin_users = "manuel@werlberger.org";
       };
     
       server = {
