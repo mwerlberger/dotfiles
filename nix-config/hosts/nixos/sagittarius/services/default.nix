@@ -16,5 +16,6 @@
     ./radarr.nix
     ./prowlarr.nix
     ./qbittorrent.nix
+    ./homepage.nix
   ];
 }

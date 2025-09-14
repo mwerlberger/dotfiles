@@ -19,15 +19,25 @@
   # 2. Enable the node_exporter to collect system metrics
   services.prometheus.exporters.node = {
     enable = true;
-    enabledCollectors = [ "systemd" "zfs" ]; # Add other collectors as needed
-    # To monitor drive temperatures, you may need to enable the textfile collector
-    # and use a script that outputs metrics in the Prometheus format.
+    enabledCollectors = [ "systemd" "zfs" "textfile" "filesystem" "loadavg" "meminfo" "netdev" "stat" ];
   };
 
   # 3. Enable Grafana for visualization
 
   services.grafana = {
     enable = true;
+    provision = {
+      enable = true;
+      datasources.settings.datasources = [
+        {
+          name = "Prometheus";
+          type = "prometheus";
+          access = "proxy";
+          url = "http://127.0.0.1:9090";
+          isDefault = true;
+        }
+      ];
+    };
     settings = {
       "auth.proxy" = {
         enabled = true;
@@ -37,6 +47,13 @@
         whitelist = "127.0.0.1";
         headers = "Name:X-Webauth-Name,Email:X-Webauth-Email";
         enable_login_token = false;
+      };
+      
+      users = {
+        # Set default role for new users
+        default_role = "Admin";
+        # Admin users
+        admin_users = "manuel@werlberger.org";
       };
     
       server = {
@@ -48,4 +65,5 @@
       };
     };
   };
+
 }
