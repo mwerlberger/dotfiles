@@ -25,6 +25,7 @@
     agenix-cli
     bat
     chatgpt
+    claude-code
     code-cursor
     cowsay
     deploy-rs
