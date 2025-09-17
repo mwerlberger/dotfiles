@@ -1,4 +1,4 @@
-theme = catppuccin-latte
+theme = Catppuccin Latte
 shell-integration = fish
 shell-integration-features = no-cursor,sudo,no-title
 
