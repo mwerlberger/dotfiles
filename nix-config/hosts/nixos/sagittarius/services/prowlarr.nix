@@ -6,6 +6,9 @@
     openFirewall = false;
   };
 
+  # Configure Prowlarr to use a different port to avoid conflict with Caddy
+  systemd.services.prowlarr.environment.PROWLARR__SERVER__PORT = lib.mkForce "9697";
+
   # Disable Prowlarr authentication since Tailscale provides security
   systemd.services.prowlarr-disable-auth = {
     description = "Disable Prowlarr authentication";
@@ -18,7 +21,7 @@
     script = ''
       sleep 10
       # Disable authentication via API
-      ${pkgs.curl}/bin/curl -X PUT "http://192.168.100.2:9696/api/v1/config/host" \
+      ${pkgs.curl}/bin/curl -X PUT "http://localhost:9697/api/v1/config/host" \
         -H "Content-Type: application/json" \
         -d '{"authenticationMethod": "None"}' || true
     '';
@@ -66,7 +69,7 @@
         get_certificate tailscale
       }
       tailscale_auth set_headers
-      reverse_proxy 192.168.100.2:9696 {
+      reverse_proxy localhost:9697 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote.host}
         header_up X-Forwarded-For {http.request.remote.host}
