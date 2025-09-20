@@ -35,15 +35,14 @@
     "d /data/lake/media/tv 0770 sonarr nas -"
   ];
 
-  # Override systemd service to run in VPN namespace
-  systemd.services.sonarr = {
-    after = [ "wg-vpn.service" ];
-    requires = [ "wg-vpn.service" ];
-    serviceConfig = {
-      NetworkNamespacePath = "/var/run/netns/vpn";
-      PrivateNetwork = lib.mkForce true;
-    };
-  };
+  # Temporarily remove VPN dependency for testing
+  # systemd.services.sonarr = {
+  #   after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+  #   wants = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+  #   serviceConfig = {
+  #     NetworkNamespacePath = "/var/run/netns/vpn";
+  #   };
+  # };
 
   # Add sonarr user to nas group after service creates the user
   systemd.services.sonarr-fix-groups = {

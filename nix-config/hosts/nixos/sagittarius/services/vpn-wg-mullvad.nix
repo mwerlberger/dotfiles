@@ -1,6 +1,58 @@
 { config, pkgs, lib, ... }:
 
 {
+  # Create VPN network namespace for *arr services
+  systemd.services.vpn-namespace = {
+    description = "Create VPN network namespace for *arr services";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "radarr.service" "sonarr.service" "prowlarr.service" "qbittorrent.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    path = with pkgs; [ iproute2 iptables coreutils ];
+    script = ''
+      # Clean up any existing resources first
+      ${pkgs.iproute2}/bin/ip netns del vpn 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip link del veth-host 2>/dev/null || true
+      
+      # Create network namespace
+      ${pkgs.iproute2}/bin/ip netns add vpn
+      
+      # Create veth pair to connect namespace to host
+      ${pkgs.iproute2}/bin/ip link add veth-host type veth peer name veth-vpn
+      
+      # Move one end to the namespace
+      ${pkgs.iproute2}/bin/ip link set veth-vpn netns vpn
+      
+      # Configure host side
+      ${pkgs.iproute2}/bin/ip addr add 192.168.100.1/24 dev veth-host
+      ${pkgs.iproute2}/bin/ip link set veth-host up
+      
+      # Configure namespace side
+      ${pkgs.iproute2}/bin/ip netns exec vpn ip addr add 192.168.100.2/24 dev veth-vpn
+      ${pkgs.iproute2}/bin/ip netns exec vpn ip link set veth-vpn up
+      ${pkgs.iproute2}/bin/ip netns exec vpn ip link set lo up
+      ${pkgs.iproute2}/bin/ip netns exec vpn ip route add default via 192.168.100.1
+      
+      # Enable IP forwarding and NAT for the namespace
+      echo 1 > /proc/sys/net/ipv4/ip_forward
+      ${pkgs.iptables}/bin/iptables -t nat -A POSTROUTING -s 192.168.100.0/24 -o mullvad -j MASQUERADE 2>/dev/null || true
+      ${pkgs.iptables}/bin/iptables -A FORWARD -i veth-host -o mullvad -j ACCEPT 2>/dev/null || true
+      ${pkgs.iptables}/bin/iptables -A FORWARD -i mullvad -o veth-host -j ACCEPT 2>/dev/null || true
+    '';
+    
+    preStop = ''
+      # Clean up namespace
+      ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 192.168.100.0/24 -o mullvad -j MASQUERADE 2>/dev/null || true
+      ${pkgs.iptables}/bin/iptables -D FORWARD -i veth-host -o mullvad -j ACCEPT 2>/dev/null || true
+      ${pkgs.iptables}/bin/iptables -D FORWARD -i mullvad -o veth-host -j ACCEPT 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip link del veth-host 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip netns del vpn 2>/dev/null || true
+    '';
+  };
+
+  # Simple WireGuard configuration for the host
   networking.wg-quick.interfaces.mullvad = {
     address = [ "10.66.146.127/32" "fc00:bbbb:bbbb:bb01::3:927e/128" ];
     dns = [ "10.64.0.1" ];
@@ -13,27 +65,8 @@
       persistentKeepalive = 25;
     }];
 
+    # Don't manage routing automatically
     table = "off";
-    
-    postUp = ''
-      # Create custom routing table for selective routing
-      ${pkgs.iproute2}/bin/ip route add default dev mullvad table 51820
-      ${pkgs.iproute2}/bin/ip rule add fwmark 0x1 table 51820 priority 100
-      
-      # Mark service traffic for VPN routing
-      ${pkgs.iptables}/bin/iptables -t mangle -A OUTPUT -m owner --uid-owner sonarr -j MARK --set-mark 0x1
-      ${pkgs.iptables}/bin/iptables -t mangle -A OUTPUT -m owner --uid-owner radarr -j MARK --set-mark 0x1
-      ${pkgs.iptables}/bin/iptables -t mangle -A OUTPUT -m owner --uid-owner prowlarr -j MARK --set-mark 0x1
-      ${pkgs.iptables}/bin/iptables -t mangle -A OUTPUT -m owner --uid-owner qbittorrent -j MARK --set-mark 0x1
-    '';
-    
-    preDown = ''
-      ${pkgs.iproute2}/bin/ip rule del fwmark 0x1 table 51820 2>/dev/null || true
-      ${pkgs.iptables}/bin/iptables -t mangle -D OUTPUT -m owner --uid-owner sonarr -j MARK --set-mark 0x1 2>/dev/null || true
-      ${pkgs.iptables}/bin/iptables -t mangle -D OUTPUT -m owner --uid-owner radarr -j MARK --set-mark 0x1 2>/dev/null || true
-      ${pkgs.iptables}/bin/iptables -t mangle -D OUTPUT -m owner --uid-owner prowlarr -j MARK --set-mark 0x1 2>/dev/null || true
-      ${pkgs.iptables}/bin/iptables -t mangle -D OUTPUT -m owner --uid-owner qbittorrent -j MARK --set-mark 0x1 2>/dev/null || true
-    '';
   };
 
   # Create key file with proper permissions

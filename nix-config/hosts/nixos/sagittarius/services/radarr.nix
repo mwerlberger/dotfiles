@@ -35,15 +35,14 @@
     "d /data/lake/media/movies 0770 radarr nas -"
   ];
 
-  # Override systemd service to run in VPN namespace
-  systemd.services.radarr = {
-    after = [ "wg-vpn.service" ];
-    requires = [ "wg-vpn.service" ];
-    serviceConfig = {
-      NetworkNamespacePath = "/var/run/netns/vpn";
-      PrivateNetwork = lib.mkForce true;
-    };
-  };
+  # Temporarily remove VPN dependency for testing
+  # systemd.services.radarr = {
+  #   after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+  #   wants = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+  #   serviceConfig = {
+  #     NetworkNamespacePath = "/var/run/netns/vpn";
+  #   };
+  # };
 
   # Add radarr user to nas group after service creates the user
   systemd.services.radarr-fix-groups = {

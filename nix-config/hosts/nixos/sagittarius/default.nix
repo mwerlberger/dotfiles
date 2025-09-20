@@ -6,9 +6,11 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./agenix.nix
+    ./network.nix
     ./apps.nix
     ./services/default.nix
-  ];
+ ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -17,25 +19,8 @@
   # Power Management
   powerManagement.cpuFreqGovernor = "ondemand"; # or "powersave"
 
-  networking.hostId = "5A6AE005"; # Must be set to a unique 8-char hex string for ZFS
-  networking.hostName = "sagittarius"; # Define your hostname.
-
-  # /etc/nixos/configuration.nix
-  networking.interfaces.enp5s0 = {
-    ipv6.addresses = [
-      {
-        address = "2a02:168:ff46::10";
-        prefixLength = 64;
-      }
-    ];
-  };
-
   # Set your time zone.
   time.timeZone = "Europe/Zurich";
-
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
@@ -72,16 +57,6 @@
   #   };
   # }; 
 
-  networking.firewall.allowedTCPPorts = [
-    22
-    445
-    139 # Samba
-    8444  # Immich local LAN access
-  ];
-  networking.firewall.allowedUDPPorts = [
-    137
-    138 # Samba
-  ];
 
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
@@ -91,53 +66,4 @@
 
   # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
   system.stateVersion = "25.05"; # Did you read the comment?
-
-  # agenix: use host SSH key to decrypt secrets
-  age.identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-  # agenix secret providing CLOUDFLARE_API_TOKEN (as KEY=VALUE env file)
-  # age.secrets.cloudflare-api-token = {
-  #   file = ../../../secrets/cloudflare-api-token.age;
-  #   mode = "0400";
-  #   owner = "root";
-  #   group = "root";
-  # };
-
-  age.secrets.tailscale-authkey = {
-    file = ../../../secrets/tailscale-authkey.age;  # adjust path
-    mode = "0400";
-    owner = "root";
-    group = "root";
-  };
-
-  age.secrets.google-oauth-client-id = {
-    file = ../../../secrets/google-oauth-client-id.age;  # adjust path
-    mode = "0440";
-    owner = "root";
-    group = "nas";
-  };
-
-  age.secrets.google-oauth-client-secret = {
-    file = ../../../secrets/google-oauth-client-secret.age;  # adjust path
-    mode = "0440";
-    owner = "immich";
-    group = "nas";
-  };
-
-  age.secrets.mullvad-zrh = {
-    file = ../../../secrets/mullvad-zrh.age;
-    mode = "0400";
-    owner = "root";
-    group = "root";
-  };
-
-  # age.secrets.caddy-ts-auth-env = {
-  #   file = ../../../secrets/caddy-ts-auth.env.age;
-  #   mode = "0400";
-  #   owner = "root";
-  #   group = "root";
-  # };
-
-  # systemd.services.caddy.serviceConfig.EnvironmentFile = [
-  #   config.age.secrets.caddy-ts-auth-env.path
-  # ];
 }

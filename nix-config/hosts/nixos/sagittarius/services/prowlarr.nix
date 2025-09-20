@@ -34,13 +34,12 @@
     "d /var/lib/prowlarr 0770 prowlarr nas -"
   ];
 
-  # Override systemd service to run in VPN namespace
+  # Configure prowlarr to run in VPN namespace
   systemd.services.prowlarr = {
-    after = [ "wg-vpn.service" ];
-    requires = [ "wg-vpn.service" ];
+    after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+    wants = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
     serviceConfig = {
       NetworkNamespacePath = "/var/run/netns/vpn";
-      PrivateNetwork = lib.mkForce true;
     };
   };
 
