@@ -20,6 +20,7 @@
     curl
     #git
     graphite-cli
+    inetutils
     just
     fish
     bat
