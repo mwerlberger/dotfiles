@@ -4,19 +4,16 @@
   # Enable Mullvad VPN service
   services.mullvad-vpn.enable = true;
   
-  # Enable systemd-resolved (required for Mullvad VPN DNS to work properly)
-  services.resolved.enable = true;
-  services.resolved.dnssec = "true";
-  services.resolved.domains = [ "~." ];
-  services.resolved.fallbackDns = [ "1.1.1.1" "8.8.8.8" ];
+  # DNS will be handled manually to avoid conflicts with main interface
+  # Keep main interface DNS intact and route VPN traffic through VPN DNS
   
   # WireGuard configuration for enp6s0-specific routing
   networking.wg-quick.interfaces.mullvad = {
     # You'll need to get these from your Mullvad account
     # Generate WireGuard config at: https://mullvad.net/en/account/#/wireguard-config
-    privateKey = "qCkNGHWFIokKTAdU8mPBTqYDUmyyGTh2UM7cAHnjvGg=";
+    privateKeyFile = config.age.secrets.mullvad-privatekey-ch-zrh-505.path;
     address = [ "10.73.245.111/32" "fc00:bbbb:bbbb:bb01::a:f56e/128" ];
-    dns = [ "10.64.0.1" ]; # Mullvad DNS server
+    # DNS routing will be handled manually in postUp
     
     peers = [{
       publicKey = "dc16Gcid7jLcHRD7uHma1myX3vWhEy/bZIBtqZw0B2I=";
@@ -36,14 +33,19 @@
     }];
     
     # Use the existing VPN routing table
-    table = "200";
+    table = "vpn";
     
     postUp = ''
       # Add rule to route traffic from enp6s0 through VPN with higher priority than LAN
-      ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 table 200 priority 100
+      ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 table vpn priority 100
       
       # Route traffic coming from enp6s0 interface through VPN
-      ${pkgs.iproute2}/bin/ip rule add iif enp6s0 table 200 priority 101
+      ${pkgs.iproute2}/bin/ip rule add iif enp6s0 table vpn priority 101
+      
+      # Ensure DNS traffic can reach public DNS servers (highest priority)
+      ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 to 1.1.1.1 table enp6s0 priority 40
+      ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 to 8.8.8.8 table enp6s0 priority 41
+      ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 to 100.100.100.100 table enp6s0 priority 42
       
       # Ensure LAN traffic from enp6s0 stays local (higher priority = lower number)
       ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 to 192.168.1.0/24 table enp6s0 priority 50
@@ -52,18 +54,29 @@
       # Allow access to common private networks
       ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 to 10.0.0.0/8 table enp6s0 priority 52
       ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 to 172.16.0.0/12 table enp6s0 priority 53
+      
+      # Route DNS queries from VPN interface through VPN DNS (10.64.0.1)
+      ${pkgs.iproute2}/bin/ip route add 10.64.0.1 dev mullvad table vpn
     '';
     
     preDown = ''
       # Clean up VPN rules
-      ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 table 200 priority 100 2>/dev/null || true
-      ${pkgs.iproute2}/bin/ip rule del iif enp6s0 table 200 priority 101 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 table vpn priority 100 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip rule del iif enp6s0 table vpn priority 101 2>/dev/null || true
+      
+      # Clean up DNS rules
+      ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 to 1.1.1.1 table enp6s0 priority 40 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 to 8.8.8.8 table enp6s0 priority 41 2>/dev/null || true
+      ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 to 100.100.100.100 table enp6s0 priority 42 2>/dev/null || true
       
       # Clean up LAN rules
       ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 to 192.168.1.0/24 table enp6s0 priority 50 2>/dev/null || true
       ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 to 192.168.2.0/24 table enp6s0 priority 51 2>/dev/null || true
       ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 to 10.0.0.0/8 table enp6s0 priority 52 2>/dev/null || true
       ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 to 172.16.0.0/12 table enp6s0 priority 53 2>/dev/null || true
+      
+      # Clean up DNS route
+      ${pkgs.iproute2}/bin/ip route del 10.64.0.1 dev mullvad table vpn 2>/dev/null || true
     '';
   };
   

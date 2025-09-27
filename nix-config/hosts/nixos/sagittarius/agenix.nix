@@ -42,4 +42,11 @@
     group = "root";
   };
 
+  age.secrets.mullvad-privatekey-ch-zrh-505 = {
+    file = ../../../secrets/mullvad-privatekey-ch-zrh-505.age;
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
 }
