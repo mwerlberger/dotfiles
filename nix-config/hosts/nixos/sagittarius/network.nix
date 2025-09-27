@@ -62,8 +62,8 @@
   # '';
 
   systemd.services.setup-enp6s0-routing = {
-    description = "Setup routing for enp6s0";
-    after = [ "network-online.target" ];
+    description = "Setup routing for enp6s0 with VPN support";
+    after = [ "network-online.target" "systemd-resolved.service" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
     
@@ -76,23 +76,27 @@
           sleep 1
         done
         
-        # Clean up existing rules
+        # Clean up existing rules for enp6s0 table
         ${pkgs.iproute2}/bin/ip rule del from 192.168.2.207 table enp6s0 2>/dev/null || true
         ${pkgs.iproute2}/bin/ip route flush table enp6s0 2>/dev/null || true
         
-        # Setup routing for enp6s0
+        # Setup basic enp6s0 routing (for LAN access and fallback)
         ${pkgs.iproute2}/bin/ip route add default via 192.168.2.1 dev enp6s0 table enp6s0
+        ${pkgs.iproute2}/bin/ip route add 192.168.1.0/24 via 192.168.2.1 dev enp6s0 table enp6s0
         ${pkgs.iproute2}/bin/ip route add 192.168.2.0/24 dev enp6s0 table enp6s0
-        ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 table enp6s0
         
-        # Add static ARP entries
+        # Add fallback rule with lower priority (higher number) than VPN rules
+        ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 table enp6s0 priority 300
+        
+        # Add static ARP entries for gateway
         ${pkgs.iproute2}/bin/ip neigh add 8.8.8.8 lladdr 70:a7:41:b6:f3:21 dev enp6s0 || true
         ${pkgs.iproute2}/bin/ip neigh add 1.1.1.1 lladdr 70:a7:41:b6:f3:21 dev enp6s0 || true
       '';
     };
   };
 
-  networking.nameservers = [ "192.168.1.1" "8.8.8.8" ];
+  # DNS will be handled by systemd-resolved (required for Mullvad VPN)
+  # networking.nameservers = [ "192.168.1.1" "8.8.8.8" ];
   
   networking.firewall.allowedTCPPorts = [
     22 445 139 8444

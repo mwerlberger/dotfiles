@@ -8,6 +8,7 @@
     ./hardware-configuration.nix
     ./agenix.nix
     ./network.nix
+    ./vpn.nix
     ./apps.nix
     ./services/default.nix
  ];
