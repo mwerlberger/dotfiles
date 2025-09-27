@@ -6,6 +6,9 @@
     openFirewall = false;
   };
 
+  # Configure Sonarr to use a different port to avoid conflict with Caddy
+  systemd.services.sonarr.environment.SONARR__SERVER__PORT = lib.mkForce "8990";
+
   # Disable Sonarr authentication since Tailscale provides security
   systemd.services.sonarr-disable-auth = {
     description = "Disable Sonarr authentication";
@@ -18,7 +21,7 @@
     script = ''
       sleep 10
       # Disable authentication via API
-      ${pkgs.curl}/bin/curl -X PUT "http://192.168.100.2:8989/api/v3/config/host" \
+      ${pkgs.curl}/bin/curl -X PUT "http://localhost:8990/api/v3/config/host" \
         -H "Content-Type: application/json" \
         -d '{"authenticationMethod": "None"}' || true
     '';
@@ -32,15 +35,14 @@
     "d /data/lake/media/tv 0770 sonarr nas -"
   ];
 
-  # Override systemd service to run in VPN namespace
-  systemd.services.sonarr = {
-    after = [ "wg-vpn.service" ];
-    requires = [ "wg-vpn.service" ];
-    serviceConfig = {
-      NetworkNamespacePath = "/var/run/netns/vpn";
-      PrivateNetwork = lib.mkForce true;
-    };
-  };
+  # Temporarily remove VPN dependency for testing
+  # systemd.services.sonarr = {
+  #   after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+  #   wants = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+  #   serviceConfig = {
+  #     NetworkNamespacePath = "/var/run/netns/vpn";
+  #   };
+  # };
 
   # Add sonarr user to nas group after service creates the user
   systemd.services.sonarr-fix-groups = {
@@ -67,7 +69,7 @@
         get_certificate tailscale
       }
       tailscale_auth set_headers
-      reverse_proxy 192.168.100.2:8989 {
+      reverse_proxy localhost:8990 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote.host}
         header_up X-Forwarded-For {http.request.remote.host}

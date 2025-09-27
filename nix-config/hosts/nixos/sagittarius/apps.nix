@@ -20,6 +20,7 @@
     curl
     #git
     graphite-cli
+    inetutils
     just
     fish
     bat
@@ -34,6 +35,7 @@
     tcpdump
     claude-code
     wireguard-tools
+    dnsutils  # provides dig, nslookup, etc.
   ];
   programs.git = {
     enable = true;
