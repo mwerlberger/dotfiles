@@ -12,9 +12,6 @@
     ./jellyfin.nix
     ./vpn-namespace.nix
     ./arr.nix
-    # ./sonarr.nix
-    # ./radarr.nix
-    # ./prowlarr.nix
     # ./qbittorrent.nix
     ./homepage.nix
   ];
