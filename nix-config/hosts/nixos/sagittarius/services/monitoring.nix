@@ -2,7 +2,7 @@
 , username
 , ...
 }:
-{ 
+{
   # 1. Enable Prometheus and configure it to scrape metrics from node_exporter
   services.prometheus = {
     enable = true;
@@ -48,14 +48,14 @@
         headers = "Name:X-Webauth-Name,Email:X-Webauth-Email";
         enable_login_token = false;
       };
-      
+
       users = {
         # Set default role for new users
         default_role = "Admin";
         # Admin users
         admin_users = "manuel@werlberger.org";
       };
-    
+
       server = {
         domain = "sagittarius.taildb4b48.ts.net";
         root_url = "https://sagittarius.taildb4b48.ts.net:8443/";

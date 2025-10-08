@@ -95,9 +95,9 @@
 
   # Open firewall ports for ARR services (accessed via reverse proxy)
   networking.firewall.allowedTCPPorts = [
-    8989  # Sonarr
-    7878  # Radarr  
-    9696  # Prowlarr
-    8080  # qBittorrent
+    8989 # Sonarr
+    7878 # Radarr  
+    9696 # Prowlarr
+    8080 # qBittorrent
   ];
 }

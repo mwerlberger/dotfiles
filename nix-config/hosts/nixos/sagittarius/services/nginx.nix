@@ -49,12 +49,12 @@ in
       addSSL = true;
       sslCertificate = "${certDir}/${tsHost}.crt";
       sslCertificateKey = "${certDir}/${tsHost}.key";
-      
+
       locations."/" = {
         proxyPass = "http://127.0.0.1:8080";
         proxyWebsockets = true;
       };
-      
+
       # Health check endpoint
       locations."/health" = {
         return = "200 'OK: nginx is up'";
@@ -71,7 +71,7 @@ in
         # rely on the global recommended proxy_set_header include to avoid duplicate headers
       };
 
-      
+
       # Prometheus reverse proxy
       locations."/prometheus/" = {
         # Keep the /prometheus/ prefix when forwarding (Prometheus usually expects /)

@@ -33,11 +33,11 @@
   };
 
   users.groups = {
-    prowlarr = {};
-    sonarr = {};
-    radarr = {};
-    lidarr = {};
-    readarr = {};
+    prowlarr = { };
+    sonarr = { };
+    radarr = { };
+    lidarr = { };
+    readarr = { };
   };
 
   # Prowlarr
@@ -50,7 +50,7 @@
     after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
     requires = [ "vpn-namespace.service" ];
     bindsTo = [ "wg-quick-mullvad.service" ];
-    
+
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
     };
@@ -85,7 +85,7 @@
     after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
     requires = [ "vpn-namespace.service" ];
     bindsTo = [ "wg-quick-mullvad.service" ];
-    
+
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
     };
@@ -120,7 +120,7 @@
     after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
     requires = [ "vpn-namespace.service" ];
     bindsTo = [ "wg-quick-mullvad.service" ];
-    
+
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
     };
@@ -155,7 +155,7 @@
     after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
     requires = [ "vpn-namespace.service" ];
     bindsTo = [ "wg-quick-mullvad.service" ];
-    
+
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
     };
@@ -190,7 +190,7 @@
     after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
     requires = [ "vpn-namespace.service" ];
     bindsTo = [ "wg-quick-mullvad.service" ];
-    
+
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
     };

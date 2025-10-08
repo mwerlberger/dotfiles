@@ -30,12 +30,12 @@ in
       RemainAfterExit = true;
     };
     script = ''
-      cat > /var/lib/jellyfin-secrets/oauth.env << EOF
-GOOGLE_CLIENT_ID=$(cat ${config.age.secrets.google-oauth-client-id.path})
-GOOGLE_CLIENT_SECRET=$(cat ${config.age.secrets.google-oauth-client-secret.path})
-EOF
-      chown ${config.services.jellyfin.user}:${config.services.jellyfin.group} /var/lib/jellyfin-secrets/oauth.env
-      chmod 600 /var/lib/jellyfin-secrets/oauth.env
+            cat > /var/lib/jellyfin-secrets/oauth.env << EOF
+      GOOGLE_CLIENT_ID=$(cat ${config.age.secrets.google-oauth-client-id.path})
+      GOOGLE_CLIENT_SECRET=$(cat ${config.age.secrets.google-oauth-client-secret.path})
+      EOF
+            chown ${config.services.jellyfin.user}:${config.services.jellyfin.group} /var/lib/jellyfin-secrets/oauth.env
+            chmod 600 /var/lib/jellyfin-secrets/oauth.env
     '';
   };
 

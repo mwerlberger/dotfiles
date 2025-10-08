@@ -39,8 +39,8 @@
     };
     deploy-rs.url = "github:serokell/deploy-rs";
 
-  # Secrets management (encrypted with age/SSH keys)
-  agenix.url = "github:ryantm/agenix";
+    # Secrets management (encrypted with age/SSH keys)
+    agenix.url = "github:ryantm/agenix";
 
     # Homebrew including declarative tap management
     nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
@@ -81,8 +81,8 @@
       (lib.mkNixos
         "sagittarius"
         inputs.nixpkgs-stable
-  [ ]
-  [ ./modules/tailscale.nix ]
+        [ ]
+        [ ./modules/tailscale.nix ]
       )
     ];
 }
