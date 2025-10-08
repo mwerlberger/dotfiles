@@ -1,4 +1,5 @@
 { pkgs
+, pkgs-unstable
 , ...
 }:
 {
@@ -19,7 +20,7 @@
     wget
     curl
     #git
-    graphite-cli
+    pkgs-unstable.graphite-cli
     inetutils
     just
     fish
@@ -33,7 +34,7 @@
     skim
     delta
     tcpdump
-    claude-code
+    pkgs-unstable.claude-code
     wireguard-tools
     dnsutils  # provides dig, nslookup, etc.
   ];
