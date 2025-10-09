@@ -12,7 +12,8 @@
     ./jellyfin.nix
     ./vpn-namespace.nix
     ./arr.nix
-    # ./qbittorrent.nix
+    ./qbittorrent.nix
+    ./sabnzbd.nix
     ./homepage.nix
   ];
 }

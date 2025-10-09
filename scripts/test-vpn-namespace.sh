@@ -72,6 +72,30 @@ else
 fi
 echo ""
 
+echo -e "${BLUE}=== 8. qBittorrent Network Test ===${NC}"
+if systemctl is-active --quiet qbittorrent; then
+    QBIT_PID=$(systemctl show qbittorrent --property=MainPID --value)
+    echo "qBittorrent is running (PID: $QBIT_PID)"
+    echo "qBittorrent sees this IP:"
+    QBIT_IP=$(sudo nsenter -t $QBIT_PID -n curl -s --max-time 5 https://api.ipify.org)
+    echo -e "${GREEN}$QBIT_IP${NC}"
+else
+    echo -e "${YELLOW}qBittorrent is not running${NC}"
+fi
+echo ""
+
+echo -e "${BLUE}=== 9. SABnzbd Network Test ===${NC}"
+if systemctl is-active --quiet sabnzbd; then
+    SABNZBD_PID=$(ps aux | grep -i sabnzbd | grep python | grep -v grep | awk '{print $2}' | head -1)
+    echo "SABnzbd is running (PID: $SABNZBD_PID)"
+    echo "SABnzbd sees this IP:"
+    SABNZBD_IP=$(sudo nsenter -t $SABNZBD_PID -n curl -s --max-time 5 https://api.ipify.org)
+    echo -e "${GREEN}$SABNZBD_IP${NC}"
+else
+    echo -e "${YELLOW}SABnzbd is not running${NC}"
+fi
+echo ""
+
 echo -e "${BLUE}=== Summary ===${NC}"
 echo "Host IP:      $HOST_IP"
 echo "Namespace IP: $NAMESPACE_IP"
