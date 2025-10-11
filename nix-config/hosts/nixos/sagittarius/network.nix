@@ -85,6 +85,11 @@
         ${pkgs.iproute2}/bin/ip route add 192.168.1.0/24 via 192.168.2.1 dev enp6s0 table enp6s0
         ${pkgs.iproute2}/bin/ip route add 192.168.2.0/24 dev enp6s0 table enp6s0
         
+        # Add explicit routes for DNS servers via enp6s0
+        ${pkgs.iproute2}/bin/ip route add 1.1.1.1 via 192.168.2.1 dev enp6s0 table enp6s0
+        ${pkgs.iproute2}/bin/ip route add 8.8.8.8 via 192.168.2.1 dev enp6s0 table enp6s0
+        ${pkgs.iproute2}/bin/ip route add 100.100.100.100 via 192.168.2.1 dev enp6s0 table enp6s0
+        
         # Add fallback rule with lower priority (higher number) than VPN rules
         ${pkgs.iproute2}/bin/ip rule add from 192.168.2.207 table enp6s0 priority 300
         
@@ -95,8 +100,8 @@
     };
   };
 
-  # DNS will be handled by systemd-resolved (required for Mullvad VPN)
-  # networking.nameservers = [ "192.168.1.1" "8.8.8.8" ];
+  # Set explicit nameservers to ensure DNS works with interface-specific routing
+  networking.nameservers = [ "1.1.1.1" "8.8.8.8" "100.100.100.100" ];
   
   networking.firewall.allowedTCPPorts = [
     22 445 139 8444
