@@ -54,7 +54,7 @@
   #   # Clean up any existing rules first
   #   ip rule del from 192.168.2.207 table enp6s0 2>/dev/null || true
   #   ip route flush table enp6s0 2>/dev/null || true
-    
+
   #   # Add routing for enp6s0
   #   ip route add default via 192.168.2.1 dev enp6s0 table enp6s0
   #   ip route add 192.168.2.0/24 dev enp6s0 table enp6s0
@@ -66,7 +66,7 @@
     after = [ "network-online.target" "systemd-resolved.service" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
-    
+
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -102,11 +102,16 @@
 
   # Set explicit nameservers to ensure DNS works with interface-specific routing
   networking.nameservers = [ "1.1.1.1" "8.8.8.8" "100.100.100.100" ];
-  
+
   networking.firewall.allowedTCPPorts = [
-    22 445 139 8444
+    22
+    445
+    139
+    8444
   ];
   networking.firewall.allowedUDPPorts = [
-    137 138 51820  # Add WireGuard port
+    137
+    138
+    51820 # Add WireGuard port
   ];
 }

@@ -15,21 +15,21 @@
   # };
 
   age.secrets.tailscale-authkey = {
-    file = ../../../secrets/tailscale-authkey.age;  # adjust path
+    file = ../../../secrets/tailscale-authkey.age; # adjust path
     mode = "0400";
     owner = "root";
     group = "root";
   };
 
   age.secrets.google-oauth-client-id = {
-    file = ../../../secrets/google-oauth-client-id.age;  # adjust path
+    file = ../../../secrets/google-oauth-client-id.age; # adjust path
     mode = "0440";
     owner = "root";
     group = "nas";
   };
 
   age.secrets.google-oauth-client-secret = {
-    file = ../../../secrets/google-oauth-client-secret.age;  # adjust path
+    file = ../../../secrets/google-oauth-client-secret.age; # adjust path
     mode = "0440";
     owner = "immich";
     group = "nas";

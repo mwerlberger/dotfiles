@@ -12,7 +12,7 @@ in
     port = 2283;
     host = "127.0.0.1";
     mediaLocation = "/data/lake/photos/immich";
-    
+
     settings = {
       # External URL where Immich is served; required for share links.
       server = {
@@ -53,12 +53,12 @@ in
       RemainAfterExit = true;
     };
     script = ''
-      cat > /var/lib/immich-secrets/oauth.env << EOF
-OAUTH_CLIENT_ID=$(cat ${config.age.secrets.google-oauth-client-id.path})
-OAUTH_CLIENT_SECRET=$(cat ${config.age.secrets.google-oauth-client-secret.path})
-EOF
-      chown ${config.services.immich.user}:${config.services.immich.group} /var/lib/immich-secrets/oauth.env
-      chmod 600 /var/lib/immich-secrets/oauth.env
+            cat > /var/lib/immich-secrets/oauth.env << EOF
+      OAUTH_CLIENT_ID=$(cat ${config.age.secrets.google-oauth-client-id.path})
+      OAUTH_CLIENT_SECRET=$(cat ${config.age.secrets.google-oauth-client-secret.path})
+      EOF
+            chown ${config.services.immich.user}:${config.services.immich.group} /var/lib/immich-secrets/oauth.env
+            chmod 600 /var/lib/immich-secrets/oauth.env
     '';
   };
 

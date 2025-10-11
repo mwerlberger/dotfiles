@@ -90,7 +90,7 @@
   systemd.services.caddy.after = [ "tailscaled.service" "network-online.target" ];
   systemd.services.caddy.requires = [ "tailscaled.service" ];
   systemd.services.caddy.wants = [ "network-online.target" ];
-  
+
   # Add retry logic for startup failures
   systemd.services.caddy.serviceConfig = {
     Restart = "on-failure";

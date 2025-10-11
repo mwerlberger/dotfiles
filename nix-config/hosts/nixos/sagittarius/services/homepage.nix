@@ -4,8 +4,8 @@
   services.homepage-dashboard = {
     enable = true;
     listenPort = 8082;
-    
-    
+
+
     settings = {
       title = "Sagittarius NAS Dashboard";
       favicon = "https://github.com/gethomepage/homepage/raw/main/public/android-chrome-192x192.png";

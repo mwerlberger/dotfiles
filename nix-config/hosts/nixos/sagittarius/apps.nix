@@ -7,36 +7,37 @@
   # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
     agenix-cli
-    gptfdisk
-    smartmontools
+    bat
+    curl
+    delta
+    dnsutils # provides dig, nslookup, etc.
     e2fsprogs
-    fio
-    lsof
     ethtool
-    nettools
+    eza
+    fio
+    fish
+    fzf
+    gptfdisk
+    inetutils
     ipmitool
+    jq
+    just
+    lsof
+    nettools
+    nil
+    nixpkgs-fmt
+    pkgs-unstable.claude-code
+    pkgs-unstable.graphite-cli
+    ripgrep
+    skim
+    smartmontools
+    tcpdump
     tmux
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
-    curl
-    #git
-    pkgs-unstable.graphite-cli
-    inetutils
-    just
-    fish
-    bat
-    eza
-    yazi
-    ripgrep
-    jq
-    yq-go
-    fzf
-    skim
-    delta
-    tcpdump
-    pkgs-unstable.claude-code
     wireguard-tools
-    dnsutils  # provides dig, nslookup, etc.
+    yazi
+    yq-go
   ];
   programs.git = {
     enable = true;

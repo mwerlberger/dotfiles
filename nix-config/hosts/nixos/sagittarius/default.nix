@@ -11,7 +11,7 @@
     ./vpn.nix
     ./apps.nix
     ./services/default.nix
- ];
+  ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;

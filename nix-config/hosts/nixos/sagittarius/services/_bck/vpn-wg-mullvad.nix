@@ -41,7 +41,7 @@
       ${pkgs.iptables}/bin/iptables -A FORWARD -i veth-host -o mullvad -j ACCEPT 2>/dev/null || true
       ${pkgs.iptables}/bin/iptables -A FORWARD -i mullvad -o veth-host -j ACCEPT 2>/dev/null || true
     '';
-    
+
     preStop = ''
       # Clean up namespace
       ${pkgs.iptables}/bin/iptables -t nat -D POSTROUTING -s 192.168.100.0/24 -o mullvad -j MASQUERADE 2>/dev/null || true
@@ -57,7 +57,7 @@
     address = [ "10.66.146.127/32" "fc00:bbbb:bbbb:bb01::3:927e/128" ];
     dns = [ "10.64.0.1" ];
     privateKeyFile = "/etc/wireguard/mullvad.key";
-    
+
     peers = [{
       publicKey = "gSLSfY2zNFRczxHndeda258z+ayMvd7DqTlKYlKWJUo=";
       allowedIPs = [ "0.0.0.0/0" "::0/0" ];
@@ -87,6 +87,9 @@
   };
 
   networking.firewall.allowedTCPPorts = [
-    8989 7878 9696 8080
+    8989
+    7878
+    9696
+    8080
   ];
 }
