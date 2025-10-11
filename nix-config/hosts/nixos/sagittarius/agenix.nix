@@ -31,8 +31,22 @@
   age.secrets.google-oauth-client-secret = {
     file = ../../../secrets/google-oauth-client-secret.age; # adjust path
     mode = "0440";
-    owner = "immich";
+    owner = "root";
     group = "nas";
+  };
+
+  age.secrets.immich-oauth-env = {
+    file = ../../../secrets/immich-oauth-env.age;
+    mode = "0400";
+    owner = "immich";
+    group = "immich";
+  };
+
+  age.secrets.immich-config = {
+    file = ../../../secrets/immich-config.json.age;
+    mode = "0400";
+    owner = "immich";
+    group = "immich";
   };
 
   age.secrets.mullvad-zrh = {
