@@ -7,9 +7,14 @@
     openFirewall = false;
   };
 
-  # Override the default service to use port 8081 and disable auth
+  # Override the default service to use port 8081 and run in VPN namespace
   systemd.services.qbittorrent = {
+    after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
+    requires = [ "vpn-namespace.service" ];
+    bindsTo = [ "wg-quick-mullvad.service" ];
+
     serviceConfig = {
+      NetworkNamespacePath = "/run/netns/vpn";
       ExecStart = lib.mkForce "${pkgs.qbittorrent-nox}/bin/qbittorrent-nox --profile=/var/lib/qBittorrent --webui-port=8081 --confirm-legal-notice";
     };
   };
@@ -42,13 +47,14 @@
   };
 
   # Reverse proxy configuration (accessible via Tailscale)
+  # Proxies to qBittorrent running in VPN namespace
   services.caddy.virtualHosts."sagittarius.taildb4b48.ts.net:8080" = {
     extraConfig = ''
       tls {
         get_certificate tailscale
       }
       tailscale_auth set_headers
-      reverse_proxy localhost:8081 {
+      reverse_proxy 10.200.200.2:8081 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote.host}
         header_up X-Forwarded-For {http.request.remote.host}
