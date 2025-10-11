@@ -59,6 +59,10 @@ in
       specialArgs = {
         inherit inputs;
         username = "mw";
+        pkgs-unstable = import inputs.nixpkgs-unstable {
+          system = "x86_64-linux";
+          config.allowUnfree = true;
+        };
       };
       modules = [
         # ../hosts/nixos
