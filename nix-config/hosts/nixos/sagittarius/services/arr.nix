@@ -1,4 +1,8 @@
-{ config, pkgs, ... }:
+{ config
+, pkgs
+, pkgs-unstable
+, ...
+}:
 
 {
   # User configuration with nas group access
@@ -78,6 +82,7 @@
   # Sonarr
   services.sonarr = {
     enable = true;
+    package = pkgs-unstable.sonarr;
     openFirewall = false;
   };
 
@@ -113,6 +118,7 @@
   # Radarr
   services.radarr = {
     enable = true;
+    package = pkgs-unstable.radarr;
     openFirewall = false;
   };
 
@@ -148,6 +154,7 @@
   # Lidarr
   services.lidarr = {
     enable = true;
+    package = pkgs-unstable.lidarr;
     openFirewall = false;
   };
 
@@ -183,6 +190,7 @@
   # Readarr
   services.readarr = {
     enable = true;
+    package = pkgs-unstable.readarr;
     openFirewall = false;
   };
 

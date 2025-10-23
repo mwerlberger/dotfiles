@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs-unstable, lib, ... }:
 
 let
   # Jellyfin host configuration for reverse proxy
@@ -6,6 +6,7 @@ let
 in
 {
   services.jellyfin = {
+    package = pkgs-unstable.jellyfin;
     enable = true;
     openFirewall = false; # We'll use reverse proxy instead
     dataDir = "/data/lake/media/jellyfin";
@@ -65,10 +66,9 @@ in
       }
     '';
   };
-  services.caddy.virtualHosts."192.168.1.206:8445" = {
+  services.caddy.virtualHosts."http://192.168.1.206:8445" = {
     extraConfig = ''
-      bind 192.168.1.206 
-      tls internal
+      bind 192.168.1.206
       reverse_proxy 127.0.0.1:8096 {
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote.host}
