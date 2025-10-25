@@ -28,6 +28,7 @@
     nixpkgs-fmt
     pkgs-unstable.claude-code
     pkgs-unstable.graphite-cli
+    pciutils
     ripgrep
     skim
     smartmontools

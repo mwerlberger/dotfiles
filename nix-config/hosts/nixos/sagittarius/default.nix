@@ -6,6 +6,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./hardware-graphics.nix
     ./agenix.nix
     ./network.nix
     ./vpn.nix
