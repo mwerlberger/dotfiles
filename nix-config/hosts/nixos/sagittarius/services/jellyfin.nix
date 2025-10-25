@@ -12,8 +12,11 @@ in
     dataDir = "/data/lake/media/jellyfin";
   };
 
-  # Add jellyfin user to nas group for media directory access
-  users.users.${config.services.jellyfin.user}.extraGroups = [ "nas" ];
+  # Add jellyfin user to necessary groups
+  # - nas: for media directory access
+  # - video: for hardware acceleration access (/dev/dri)
+  # - render: for render nodes (hardware encoding/decoding)
+  users.users.${config.services.jellyfin.user}.extraGroups = [ "nas" "video" "render" ];
 
   # Ensure media directory exists and has proper permissions
   systemd.tmpfiles.rules = [
