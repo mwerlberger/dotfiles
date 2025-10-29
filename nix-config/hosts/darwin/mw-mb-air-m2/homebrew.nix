@@ -61,7 +61,8 @@
       # "raycast"
       "freetube"
       "voiceink"
-      "zen"
+      # "zen"
+      "zen@twilight"
     ];
     brews = [
       # "pulumi"

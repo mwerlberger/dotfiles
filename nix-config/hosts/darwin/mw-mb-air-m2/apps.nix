@@ -47,20 +47,20 @@
     gnupg
     gnused
     gnutar
-    # go
-    # go-outline
-    # gocode-gomod
-    # godef
-    # golint
+    go
+    go-outline
+    gocode-gomod
+    godef
+    golint
     # google-cloud-sdk
-    # gopkgs
-    # gopls
-    # gotools
+    gopkgs
+    gopls
+    gotools
     graphite-cli
     ice-bar
     iperf3
     jq
-    # jujutsu
+    jujutsu
     just
     libation
     maccy
@@ -89,7 +89,7 @@
     tmux
     tree
     unzip
-    wget
+    # get
     which
     xh
     xld
@@ -97,6 +97,7 @@
     yq
     yq-go
     yt-dlp
+    zed-editor
     zip
     zstd
   ];
