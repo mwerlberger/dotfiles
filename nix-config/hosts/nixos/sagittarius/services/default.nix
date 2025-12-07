@@ -11,6 +11,7 @@
     ./postgresql.nix
     ./immich.nix
     ./jellyfin.nix
+    ./paperless.nix
     # ./nextcloud.nix
     # ./pydio-cells.nix  # Docker version
     # ./pydio-cells-native.nix  # Native binary version
