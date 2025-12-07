@@ -11,7 +11,7 @@
       ];
       # Ask Nix to compute the vendor hash automatically; replace with the
       # real hash once you've run `nix build`.
-      hash = "sha256-e3WZoIVlRxEABd94tgb2tRMj4XEL7+2yF/olM/O+v5w=";
+      hash = "sha256-CfXYrBSCz/HdF64lFFHzci9xpluOA/+KsUO/TNZG9ZU=";
     };
 
     globalConfig = ''
