@@ -1,5 +1,6 @@
-{ pkgs
-, ...
+{
+  pkgs,
+  ...
 }:
 {
   environment.systemPackages = with pkgs; [
@@ -90,6 +91,7 @@
     tree
     unzip
     # get
+    # whatsapp-for-mac
     which
     xh
     xld
