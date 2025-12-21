@@ -8,9 +8,9 @@
     extraPackages = with pkgs; [
       intel-media-driver  # VAAPI driver for modern Intel GPUs (>= Broadwell)
       intel-compute-runtime # OpenCL support for Intel GPUs
-      vaapiVdpau
+      libva-vdpau-driver
       libvdpau-va-gl
-      onevpl-intel-gpu    # oneVPL runtime for Intel QSV (Quick Sync Video)
+      vpl-gpu-rt
     ];
   };
 
