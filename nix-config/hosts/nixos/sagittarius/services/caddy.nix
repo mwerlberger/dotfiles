@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   services.caddy = {
@@ -81,41 +86,17 @@
           }
         '';
       };
-      # Paperless-ngx
-      "sagittarius.taildb4b48.ts.net:8445" = {
-        extraConfig = ''
-          bind 100.119.78.108
-          tls {
-            get_certificate tailscale
-          }
-          # Tailscale authentication with remote user header
-          tailscale_auth set_headers
-          reverse_proxy 127.0.0.1:28981 {
-            header_up Host {http.request.host}
-            header_up X-Real-IP {http.request.remote.host}
-            # Pass Tailscale user for remote auth
-            header_up X-Remote-User {http.request.header.Tailscale-User-Login}
-          }
-        '';
-      };
-      # Paperless-ngx: Local LAN
-      "192.168.1.206:8445" = {
-        extraConfig = ''
-          bind 192.168.1.206
-          tls internal  # Uses Caddy's internal CA for LAN
-          reverse_proxy 127.0.0.1:28981 {
-            header_up Host {http.request.host}
-            header_up X-Real-IP {http.request.remote.host}
-          }
-        '';
-      };
+
     };
   };
 
   # Let Caddy read Tailscale certificates.
   services.tailscale.permitCertUid = "caddy";
   # Make sure tailscaled is running and network is ready before Caddy starts.
-  systemd.services.caddy.after = [ "tailscaled.service" "network-online.target" ];
+  systemd.services.caddy.after = [
+    "tailscaled.service"
+    "network-online.target"
+  ];
   systemd.services.caddy.requires = [ "tailscaled.service" ];
   systemd.services.caddy.wants = [ "network-online.target" ];
 
