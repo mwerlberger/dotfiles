@@ -1,8 +1,13 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   paperlessHost = "sagittarius.taildb4b48.ts.net";
-  paperlessPort = 8445;
+  paperlessPort = 8446;
   paperlessInternalPort = 28981;
 in
 {
@@ -35,6 +40,7 @@ in
 
       # Enable remote user authentication via Tailscale
       PAPERLESS_ENABLE_HTTP_REMOTE_USER = true;
+      PAPERLESS_ENABLE_HTTP_REMOTE_USER_API = true;
       PAPERLESS_HTTP_REMOTE_USER_HEADER_NAME = "HTTP_X_REMOTE_USER";
       PAPERLESS_LOGOUT_REDIRECT_URL = "https://${paperlessHost}:${toString paperlessPort}";
 
@@ -42,8 +48,8 @@ in
       PAPERLESS_AUTO_LOGIN_USERNAME = "admin";
 
       # OCR settings
-      PAPERLESS_OCR_LANGUAGE = "eng+deu";  # English and German
-      PAPERLESS_OCR_MODE = "skip";  # skip, redo, force
+      PAPERLESS_OCR_LANGUAGE = "eng+deu"; # English and German
+      PAPERLESS_OCR_MODE = "skip"; # skip, redo, force
 
       # Time zone
       PAPERLESS_TIME_ZONE = "Europe/Zurich";
@@ -55,12 +61,12 @@ in
       PAPERLESS_ADMIN_MAIL = "admin@werlberger.org";
 
       # Consumer settings
-      PAPERLESS_CONSUMER_POLLING = 60;  # Check for new documents every 60 seconds
+      PAPERLESS_CONSUMER_POLLING = 60; # Check for new documents every 60 seconds
       PAPERLESS_CONSUMER_DELETE_DUPLICATES = true;
       PAPERLESS_CONSUMER_RECURSIVE = true;
 
       # Filename formatting
-      PAPERLESS_FILENAME_FORMAT = "{created_year}/{correspondent}/{created}-{title}";
+      PAPERLESS_FILENAME_FORMAT = "{{ created_year }}/{{ correspondent }}/{{ created }}-{{ title }}";
 
       # Task workers
       PAPERLESS_TASK_WORKERS = 2;
@@ -94,4 +100,34 @@ in
 
   # Open firewall for paperless
   networking.firewall.allowedTCPPorts = [ paperlessPort ];
+
+  # Add reverse proxy configuration to Caddy
+  services.caddy.virtualHosts."${paperlessHost}:${toString paperlessPort}" = {
+    extraConfig = ''
+      bind 100.119.78.108
+      tls {
+        get_certificate tailscale
+      }
+      # Tailscale authentication with remote user header
+      tailscale_auth set_headers
+      reverse_proxy 127.0.0.1:${toString paperlessInternalPort} {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote.host}
+        # Pass Tailscale user for remote auth
+        header_up X-Remote-User {http.request.header.Tailscale-User-Login}
+      }
+    '';
+  };
+
+  # Paperless: Local LAN access
+  services.caddy.virtualHosts."192.168.1.206:${toString paperlessPort}" = {
+    extraConfig = ''
+      bind 192.168.1.206
+      tls internal  # Uses Caddy's internal CA for LAN
+      reverse_proxy 127.0.0.1:${toString paperlessInternalPort} {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote.host}
+      }
+    '';
+  };
 }
