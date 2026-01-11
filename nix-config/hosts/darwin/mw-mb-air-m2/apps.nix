@@ -1,5 +1,6 @@
-{ pkgs
-, ...
+{
+  pkgs,
+  ...
 }:
 {
   environment.systemPackages = with pkgs; [
@@ -62,7 +63,7 @@
     jq
     jujutsu
     just
-    libation
+    #libation
     maccy
     neovim
     nil
