@@ -21,6 +21,7 @@
 
     globalConfig = ''
       email admin+caddy@werlberger.org
+      admin localhost:2019
     '';
 
     virtualHosts = {
