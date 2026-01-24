@@ -57,11 +57,12 @@
   #     ExecStart = "${pkgs.coreutils}/bin/chown mw:nas /data/lake";
   #     ExecStartPost = "${pkgs.coreutils}/bin/chmod 0770 /data/lake";
   #   };
-  # }; 
+  # };
 
 
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
+    download-buffer-size = 268435456; # 256 MB
   };
 
   nixpkgs.config.allowUnfree = true;

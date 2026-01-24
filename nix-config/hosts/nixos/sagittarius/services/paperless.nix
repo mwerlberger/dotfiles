@@ -7,7 +7,7 @@
 
 let
   paperlessHost = "sagittarius.taildb4b48.ts.net";
-  paperlessPort = 8446;
+  paperlessPort = 8448;
   paperlessInternalPort = 28981;
 in
 {

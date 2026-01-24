@@ -22,5 +22,6 @@
     ./sabnzbd.nix
     ./navidrome.nix
     ./homepage.nix
+    ./homarr.nix
   ];
 }
