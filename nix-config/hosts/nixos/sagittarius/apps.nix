@@ -61,10 +61,6 @@
     defaultEditor = true;
   };
 
-  # Add terminfo for modern terminals like Ghostty
-  environment.etc."terminfo/x/xterm-ghostty".source = "${pkgs.ncurses}/share/terminfo/x/xterm-256color";
-  environment.variables.TERMINFO_DIRS = "/etc/terminfo:${pkgs.ncurses}/share/terminfo";
-
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;

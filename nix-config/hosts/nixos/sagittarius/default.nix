@@ -38,13 +38,17 @@
     gid = 1000;
   };
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
+  # Define a user account. Don't forget to set a password with 'passwd'.
   users.users.mw = {
     uid = 1000;
     isNormalUser = true;
-    extraGroups = [ "wheel" "users" "nas" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "users" "nas" ]; # Enable 'sudo' for the user.
     hashedPassword = "$y$j9T$mg90ljeF0GfEaJbNT81X1/$Tvkmsgs2Ogi.osNIN9qfNAmCxQlm8HplZL3tVLp/zjB";
+    shell = pkgs.fish;
   };
+
+  # Enable fish shell system-wide
+  programs.fish.enable = true;
 
   # Make sure the data lake permissions are set correctly
   # Lets disable and see if we can do it purely with ZFS
