@@ -1,3 +1,4 @@
+term = xterm-256color
 theme = Catppuccin Latte
 shell-integration = fish
 shell-integration-features = no-cursor,sudo,no-title
