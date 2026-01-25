@@ -1,4 +1,9 @@
-{ inputs, pkgs, username, ... }:
+{
+  inputs,
+  pkgs,
+  username,
+  ...
+}:
 {
   imports = [
     inputs.nix-homebrew.darwinModules.nix-homebrew
@@ -37,6 +42,7 @@
     brewPrefix = "/opt/homebrew/bin";
     taps = [
       # "homebrew/services"
+      "RhetTbull/osxphotos"
     ];
     caskArgs = {
       no_quarantine = true;
@@ -68,6 +74,7 @@
       # "pulumi"
       "wget"
       "curl"
+      "osxphotos"
     ];
 
     # Applications to install from Mac App Store using mas.
