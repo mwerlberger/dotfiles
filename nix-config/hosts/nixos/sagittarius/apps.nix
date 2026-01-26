@@ -1,6 +1,7 @@
-{ pkgs
-, pkgs-unstable
-, ...
+{
+  pkgs,
+  pkgs-unstable,
+  ...
 }:
 {
   # List packages installed in system profile.
@@ -18,6 +19,7 @@
     fish
     fzf
     gptfdisk
+    immich-cli
     inetutils
     ipmitool
     jq
