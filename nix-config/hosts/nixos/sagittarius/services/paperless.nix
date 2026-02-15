@@ -72,7 +72,7 @@ in
       PAPERLESS_TASK_WORKERS = 2;
 
       # Enable tika for better document parsing (optional)
-      PAPERLESS_TIKA_ENABLED = false;
+      PAPERLESS_TIKA_ENABLED = true;
     };
   };
 

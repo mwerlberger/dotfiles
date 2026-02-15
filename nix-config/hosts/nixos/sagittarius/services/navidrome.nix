@@ -1,9 +1,15 @@
 { config, pkgs, lib, ... }:
 
-{
+let
+  pkgs-navidrome = import (builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/0358ff3.tar.gz";
+    sha256 = "0jc67f1jgbdpqqsjag8wfsv6nqi415msi106l1zx3inyqi8jiz58";
+  }) { system = pkgs.system; };
+in {
   # Navidrome music streaming server
   services.navidrome = {
     enable = true;
+    package = pkgs-navidrome.navidrome;
     settings = {
       Address = "127.0.0.1";
       Port = 4534;
