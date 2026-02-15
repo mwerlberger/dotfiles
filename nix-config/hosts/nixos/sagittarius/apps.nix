@@ -15,6 +15,7 @@
     e2fsprogs
     ethtool
     eza
+    file
     fio
     fish
     fzf
