@@ -24,6 +24,7 @@
     # arc-browser
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
     agenix-cli
+    appcleaner
     bat
     chatgpt
     claude-code
@@ -34,6 +35,7 @@
     docker
     # docker-compose
     eza
+    exiftool
     fastfetch
     ffmpeg
     file

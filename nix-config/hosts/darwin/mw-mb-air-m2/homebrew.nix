@@ -67,6 +67,7 @@
       # "raycast"
       "freetube"
       "voiceink"
+      "whatsapp"
       # "zen"
       "zen@twilight"
     ];
