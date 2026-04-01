@@ -23,5 +23,6 @@
     ./navidrome.nix
     ./homepage.nix
     ./homarr.nix
+    ./spliit.nix
   ];
 }
