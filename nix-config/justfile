@@ -24,7 +24,7 @@ darwin-check:
 
 [group('NAS')]
 nas-switch:
-  nixos-rebuild switch --flake .#{{nas_hostname}}
+  sudo nixos-rebuild switch --flake .#{{nas_hostname}}
 
 [group('NAS')]
 nas-eval:
@@ -53,14 +53,14 @@ nas-deploy:
 # ############################################################################
 
 # [group('desktop')]
-# darwin: 
+# darwin:
 #   nix build .#darwinConfigurations.{{hostname}}.system \
 #     --extra-experimental-features 'nix-command flakes'
 
 #   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}}
 
 # [group('desktop')]
-# darwin-dry-run: 
+# darwin-dry-run:
 #   nix build .#darwinConfigurations.{{hostname}}.system --dry-run \
 #     --extra-experimental-features 'nix-command flakes'
 
@@ -68,14 +68,14 @@ nas-deploy:
 
 
 # [group('desktop')]
-# darwin-debug: 
+# darwin-debug:
 #   nix build .#darwinConfigurations.{{hostname}}.system --show-trace --verbose \
 #     --extra-experimental-features 'nix-command flakes'
 
 #   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose
 
 # [group('desktop')]
-# darwin-debug-dry-run: 
+# darwin-debug-dry-run:
 #   nix build .#darwinConfigurations.{{hostname}}.system --show-trace --verbose --dry-run \
 #     --extra-experimental-features 'nix-command flakes'
 
@@ -132,4 +132,3 @@ fmt:
 [group('nix')]
 gcroot:
   ls -al /nix/var/nix/gcroots/auto/
-
