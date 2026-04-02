@@ -120,6 +120,7 @@
     445
     139
     8444
+    8088
   ];
   networking.firewall.allowedUDPPorts = [
     137

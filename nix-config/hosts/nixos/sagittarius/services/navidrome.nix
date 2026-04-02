@@ -1,11 +1,17 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   pkgs-navidrome = import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/0358ff3.tar.gz";
     sha256 = "0jc67f1jgbdpqqsjag8wfsv6nqi415msi106l1zx3inyqi8jiz58";
-  }) { system = pkgs.system; };
-in {
+  }) { system = pkgs.stdenv.hostPlatform.system; };
+in
+{
   # Navidrome music streaming server
   services.navidrome = {
     enable = true;
