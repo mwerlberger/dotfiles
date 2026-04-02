@@ -43,7 +43,7 @@
       ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip link set lo up
 
       # Add route to reach VPN endpoint through host (uses existing host routing)
-      ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip route add 146.70.134.2/32 via 10.200.200.1 dev veth-vpn
+      ${pkgs.iproute2}/bin/ip netns exec vpn ${pkgs.iproute2}/bin/ip route add 46.19.136.226/32 via 10.200.200.1 dev veth-vpn
 
       # Set up NAT for namespace to reach VPN endpoint via host
       # Use ! -d to exclude local veth traffic from NAT
