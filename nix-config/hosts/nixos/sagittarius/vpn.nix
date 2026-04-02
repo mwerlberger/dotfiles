@@ -7,13 +7,13 @@
   # WireGuard configuration running in VPN namespace
   # The namespace is created by services/vpn-namespace.nix
   networking.wg-quick.interfaces.mullvad = {
-    privateKeyFile = config.age.secrets.mullvad-privatekey-ch-zrh-505.path;
-    address = [ "10.73.245.111/32" "fc00:bbbb:bbbb:bb01::a:f56e/128" ];
+    privateKeyFile = config.age.secrets.mullvad-privatekey-ch-zrh-wg-202.path;
+    address = [ "10.71.28.122/32" "fc00:bbbb:bbbb:bb01::8:1c79/128" ];
     dns = [ "10.64.0.1" ];
 
     peers = [{
-      publicKey = "dc16Gcid7jLcHRD7uHma1myX3vWhEy/bZIBtqZw0B2I=";
-      endpoint = "146.70.134.2:51820";
+      publicKey = "gSLSfY2zNFRczxHndeda258z+ayMvd7DqTlKYlKWJUo=";
+      endpoint = "46.19.136.226:51820";
       # Route all traffic through VPN when in namespace
       allowedIPs = [ "0.0.0.0/0" "::/0" ];
       persistentKeepalive = 25;
