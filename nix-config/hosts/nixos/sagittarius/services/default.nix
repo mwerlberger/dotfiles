@@ -18,6 +18,8 @@
     # ./pydio-cells-native.nix  # Native binary version
     ./vpn-namespace.nix
     ./arr.nix
+    ./rreading-glasses.nix
+    ./bookshelf.nix
     ./qbittorrent.nix
     ./sabnzbd.nix
     ./navidrome.nix
