@@ -30,18 +30,11 @@
     extraGroups = [ "nas" ];
   };
 
-  users.users.readarr = {
-    isSystemUser = true;
-    group = "readarr";
-    extraGroups = [ "nas" ];
-  };
-
   users.groups = {
     prowlarr = { };
     sonarr = { };
     radarr = { };
     lidarr = { };
-    readarr = { };
   };
 
   # Prowlarr
@@ -187,39 +180,4 @@
     '';
   };
 
-  # Readarr
-  services.readarr = {
-    enable = true;
-    package = pkgs-unstable.readarr;
-    openFirewall = false;
-  };
-
-  systemd.services.readarr = {
-    after = [ "vpn-namespace.service" "wg-quick-mullvad.service" ];
-    requires = [ "vpn-namespace.service" ];
-    bindsTo = [ "wg-quick-mullvad.service" ];
-
-    serviceConfig = {
-      NetworkNamespacePath = "/run/netns/vpn";
-    };
-  };
-
-  services.caddy.virtualHosts."sagittarius.taildb4b48.ts.net:8787" = {
-    extraConfig = ''
-      tls {
-        get_certificate tailscale
-      }
-      tailscale_auth set_headers
-      reverse_proxy 10.200.200.2:8787 {
-        header_up Host {http.request.host}
-        header_up X-Real-IP {http.request.remote.host}
-        header_up X-Forwarded-For {http.request.remote.host}
-        header_up X-Forwarded-Proto {http.request.scheme}
-        header_up X-Webauth-User {http.request.header.Tailscale-User-Login}
-        header_up X-Webauth-Name {http.request.header.Tailscale-User-Name}
-        header_up X-Webauth-Email {http.request.header.Tailscale-User-Login}
-        header_up Remote-User {http.request.header.Tailscale-User-Login}
-      }
-    '';
-  };
 }

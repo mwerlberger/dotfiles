@@ -49,6 +49,16 @@
     group = "immich";
   };
 
+  # Hardcover API token for rreading-glasses — format: "Bearer <token>"
+  # Retrieve from: hardcover.app → Settings → API
+  # Expires annually on Jan 1 — update and restart rreading-glasses.service.
+  age.secrets.hardcover-token = {
+    file = ../../../secrets/hardcover-token.age;
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
   age.secrets.mullvad-zrh = {
     file = ../../../secrets/mullvad-zrh.age;
     mode = "0400";
