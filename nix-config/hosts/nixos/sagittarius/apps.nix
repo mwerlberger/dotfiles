@@ -7,7 +7,6 @@
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
-    ragenix
     bat
     curl
     delta
@@ -21,6 +20,7 @@
     fzf
     gptfdisk
     immich-cli
+    immich-go
     inetutils
     ipmitool
     jq
@@ -29,16 +29,18 @@
     nettools
     nil
     nixpkgs-fmt
+    pciutils
     pkgs-unstable.claude-code
     pkgs-unstable.graphite-cli
-    pciutils
     python314
-    uv
+    ragenix
+    restic
     ripgrep
     skim
     smartmontools
     tcpdump
     tmux
+    uv
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
     wireguard-tools

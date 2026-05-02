@@ -26,5 +26,6 @@
     ./homepage.nix
     ./homarr.nix
     ./spliit.nix
+    ./restic.nix
   ];
 }

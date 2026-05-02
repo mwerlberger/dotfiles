@@ -73,4 +73,13 @@
     group = "root";
   };
 
+  # Restic repository password for the Hetzner Storage Box backup.
+  # Losing this password = losing the backups. Keep an offline copy.
+  age.secrets.restic-password = {
+    file = ../../../secrets/restic-password.age;
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
 }
