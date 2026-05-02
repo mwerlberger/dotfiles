@@ -16,5 +16,5 @@ in
   "secrets/hardcover-token.age".publicKeys = allKeys;
   "secrets/mullvad-zrh.age".publicKeys = allKeys;
   "secrets/mullvad-privatekey-ch-zrh-wg-202.age".publicKeys = allKeys;
-  "secrets/hardcover-token.age".publicKeys = allKeys;
+  "secrets/restic-password.age".publicKeys = allKeys;
 }
