@@ -47,6 +47,16 @@
     shell = pkgs.fish;
   };
 
+  # NFSv4 idmapd resolves <username>@<domain> to local uids, so any macOS
+  # username used as a client must exist on the NAS (no login required).
+  users.users.manuelwerlberger = {
+    uid = 1001;
+    isNormalUser = true;
+    group = "nas";
+    createHome = false;
+    home = "/var/empty";
+  };
+
   # Enable fish shell system-wide
   programs.fish.enable = true;
 
