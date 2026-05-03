@@ -6,6 +6,7 @@
   imports = [
     ./ssh.nix
     ./samba.nix
+    ./nfs.nix
     ./caddy.nix
     ./monitoring.nix
     ./postgresql.nix
