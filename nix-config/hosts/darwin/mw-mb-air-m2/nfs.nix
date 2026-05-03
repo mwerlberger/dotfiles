@@ -12,10 +12,10 @@
   # Mounts on demand under /Volumes/nas/<name>
   environment.etc."auto_nfs" = {
     text = ''
-      photos    -fstype=nfs4,resvport,soft,intr,bg,retrans=2,timeo=5  sagittarius:/photos
-      backups   -fstype=nfs4,resvport,soft,intr,bg,retrans=2,timeo=5  sagittarius:/backups
-      documents -fstype=nfs4,resvport,soft,intr,bg,retrans=2,timeo=5  sagittarius:/documents
-      media     -fstype=nfs4,resvport,soft,intr,bg,retrans=2,timeo=5  sagittarius:/media
+      photos    -fstype=nfs,vers=4,resvport,soft,intr,retrans=2,timeo=5  sagittarius:/photos
+      backups   -fstype=nfs,vers=4,resvport,soft,intr,retrans=2,timeo=5  sagittarius:/backups
+      documents -fstype=nfs,vers=4,resvport,soft,intr,retrans=2,timeo=5  sagittarius:/documents
+      media     -fstype=nfs,vers=4,resvport,soft,intr,retrans=2,timeo=5  sagittarius:/media
     '';
   };
 

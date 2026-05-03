@@ -67,6 +67,7 @@
     just
     #libation
     maccy
+    mas
     neovim
     nil
     nixfmt-rfc-style
@@ -99,7 +100,7 @@
     xz
     yq
     yq-go
-    yt-dlp
+    # yt-dlp
     zed-editor
     zip
     zstd

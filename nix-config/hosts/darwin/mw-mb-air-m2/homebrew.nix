@@ -42,7 +42,7 @@
     prefix = "/opt/homebrew";
     taps = [
       # "homebrew/services"
-      "RhetTbull/osxphotos"
+      # "RhetTbull/osxphotos"
     ];
     caskArgs = {
       no_quarantine = true;
@@ -75,7 +75,7 @@
       # "pulumi"
       "wget"
       "curl"
-      "osxphotos"
+      # "osxphotos"
     ];
 
     # Applications to install from Mac App Store using mas.
@@ -83,7 +83,7 @@
     # otherwise Apple Store will refuse to install them.
     # For details, see https://github.com/mas-cli/mas
     masApps = {
-      PaprikaRecipeManager3 = 1303222628;
+      # PaprikaRecipeManager3 = 1303222628;
       # Xcode = 497799835;
       # Wechat = 836500024;
       # NeteaseCloudMusic = 944848654;
