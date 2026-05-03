@@ -39,7 +39,7 @@
       upgrade = true;
     };
 
-    brewPrefix = "/opt/homebrew/bin";
+    prefix = "/opt/homebrew";
     taps = [
       # "homebrew/services"
       "RhetTbull/osxphotos"
