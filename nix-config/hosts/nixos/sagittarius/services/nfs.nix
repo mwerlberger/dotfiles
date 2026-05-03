@@ -6,7 +6,10 @@
     # Clients mount nas-ip:/ and get /data/lake.
     # Allowed sources: LAN (192.168.1.0/24) and Tailscale CGNAT (100.64.0.0/10).
     exports = ''
-      /data/lake  192.168.1.0/24(rw,sync,fsid=0,no_subtree_check,root_squash) 100.64.0.0/10(rw,sync,fsid=0,no_subtree_check,root_squash)
+      /data/lake/backups   192.168.1.0/24(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 100.64.0.0/10(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /data/lake/documents 192.168.1.0/24(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 100.64.0.0/10(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /data/lake/media     192.168.1.0/24(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 100.64.0.0/10(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
+      /data/lake/photos    192.168.1.0/24(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000) 100.64.0.0/10(rw,sync,no_subtree_check,all_squash,anonuid=1000,anongid=1000)
     '';
   };
 

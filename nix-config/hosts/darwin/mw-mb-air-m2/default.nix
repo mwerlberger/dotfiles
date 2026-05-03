@@ -24,6 +24,7 @@
     ./system.nix
     ./apps.nix
     ./homebrew.nix
+    ./nfs.nix
     #   "${inputs.secrets}/work.nix"
     #   ./secrets.nix
   ];
