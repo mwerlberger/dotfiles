@@ -22,10 +22,12 @@
     # sqlite
     # utm
     # arc-browser
+    audible-cli
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
     ragenix
     appcleaner
     bat
+    # calibre # Currently broken.
     chatgpt
     claude-code
     code-cursor
@@ -65,7 +67,7 @@
     jq
     jujutsu
     just
-    #libation
+    libation
     maccy
     mas
     neovim

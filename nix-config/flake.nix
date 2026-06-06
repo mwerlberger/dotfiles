@@ -3,7 +3,10 @@
 
   nixConfig = {
     allowUnfree = true;
-    experimental-features = [ "nix-command" "flakes" ];
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     # # Optionally, keep your cross-platform/cachix settings:
     # extra-platforms = [ "x86_64-linux" ];
     # extra-substituters = [
@@ -17,7 +20,7 @@
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
 
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-darwin.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nix-darwin = {
@@ -26,7 +29,7 @@
     };
 
     home-manager-stable = {
-      url = "github:nix-community/home-manager/release-25.11";
+      url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs-stable";
     };
     home-manager-unstable = {
@@ -59,8 +62,9 @@
   };
 
   outputs =
-    inputs @ { self
-    , ...
+    inputs@{
+      self,
+      ...
     }:
     let
       # Import our library of helper functions
@@ -72,17 +76,7 @@
       # );
     in
     lib.mkMerge [
-      (lib.mkDarwin
-        "mw-mb-air-m2"
-        inputs.nixpkgs-darwin
-        [ ]
-        [ ]
-      )
-      (lib.mkNixos
-        "sagittarius"
-        inputs.nixpkgs-stable
-        [ ]
-        [ ./modules/tailscale.nix ]
-      )
+      (lib.mkDarwin "mw-mb-air-m2" inputs.nixpkgs-darwin [ ] [ ])
+      (lib.mkNixos "sagittarius" inputs.nixpkgs-stable [ ] [ ./modules/tailscale.nix ])
     ];
 }
