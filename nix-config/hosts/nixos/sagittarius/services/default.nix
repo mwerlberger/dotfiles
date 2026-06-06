@@ -20,7 +20,7 @@
     ./vpn-namespace.nix
     ./arr.nix
     ./rreading-glasses.nix
-    ./bookshelf.nix
+    # ./bookshelf.nix  # disabled: mkYarnPackage removed in nixpkgs 26.05, migrate to yarn hooks
     ./qbittorrent.nix
     ./sabnzbd.nix
     ./navidrome.nix

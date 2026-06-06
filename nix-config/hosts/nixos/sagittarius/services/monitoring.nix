@@ -39,6 +39,13 @@
       ];
     };
     settings = {
+      # Grafana 26.05 removed the default secret_key. This is the previous
+      # default — kept to preserve any existing DB-encrypted values. No
+      # sensitive secrets are stored in this Grafana's DB (only an
+      # unauthenticated localhost Prometheus datasource), so rotation is
+      # not required.
+      security.secret_key = "SW2YcwTIb9zpOOhoPsMm";
+
       "auth.proxy" = {
         enabled = true;
         header_name = "X-Webauth-User";
