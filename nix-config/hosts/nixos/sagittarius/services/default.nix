@@ -24,6 +24,7 @@
     ./qbittorrent.nix
     ./sabnzbd.nix
     ./navidrome.nix
+    ./audiobookshelf.nix
     ./homepage.nix
     ./homarr.nix
     ./spliit.nix
