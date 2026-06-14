@@ -1,10 +1,14 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   services.homepage-dashboard = {
     enable = true;
     listenPort = 8082;
-
 
     settings = {
       title = "Sagittarius NAS Dashboard";
@@ -130,6 +134,13 @@
               href = "https://sagittarius.taildb4b48.ts.net:8448";
               description = "Document management";
               icon = "paperless.png";
+            };
+          }
+          {
+            "Nextcloud" = {
+              href = "https://sagittarius.taildb4b48.ts.net:8450";
+              description = "Document management";
+              icon = "nextcloud.png";
             };
           }
           # {

@@ -25,6 +25,11 @@ in
     # Pure-Nix app management: no app store, shipped apps only.
     appstoreEnable = false;
 
+    extraApps = {
+      # OpenID Connect SSO — Google OAuth app.
+      user_oidc = config.services.nextcloud.package.packages.apps.user_oidc;
+    };
+
     # Redis-backed local cache + distributed locking.
     configureRedis = true;
 
@@ -55,6 +60,9 @@ in
       # Reverse-proxy: trust localhost (Caddy) and let per-request X-Forwarded-Proto/Host
       # decide the scheme/host. Do NOT set overwriteprotocol/overwritehost — hardcoding them
       # broke the LAN vhost previously. overwrite.cli.url fixes background/cron links.
+      # Google OAuth/OIDC rejects the 'userinfo' key in the OIDC claims parameter.
+      user_oidc.send_userinfo_claims = false;
+
       trusted_proxies = [ "127.0.0.1" "::1" ];
       "overwrite.cli.url" = "https://${nextcloudHost}:${toString nextcloudPort}";
 
@@ -87,6 +95,52 @@ in
       done
     '';
   };
+
+  # Configure Google OpenID Connect SSO via the user_oidc app.
+  # Prerequisites (one-time, in Google Cloud Console):
+  #   - OAuth client must have this redirect URI authorised:
+  #     https://sagittarius.taildb4b48.ts.net:8450/apps/user_oidc/code
+  #   - Client ID + secret are in agenix secrets: google-oauth-client-id / google-oauth-client-secret
+  systemd.services.nextcloud-oidc-config =
+    let
+      occ = "${config.services.nextcloud.occ}/bin/nextcloud-occ";
+      clientIdFile = config.age.secrets.google-oauth-client-id.path;
+      clientSecretFile = config.age.secrets.google-oauth-client-secret.path;
+    in
+    {
+      description = "Configure Nextcloud OIDC provider (Google)";
+      after = [ "nextcloud-tune-apps.service" ];
+      requires = [ "nextcloud-setup.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "nextcloud";
+        Group = "nextcloud";
+        WorkingDirectory = "/data/lake/nextcloud";
+      };
+      script = ''
+        set -euo pipefail
+        OCC="${occ}"
+        CLIENT_ID=$(cat ${clientIdFile})
+
+        # user_oidc:provider is an upsert — creates on first run, updates on subsequent runs.
+        # uid maps to Google's "sub" (stable numeric ID) — avoids the "claims" request parameter
+        # that Google rejects when requesting email via the userinfo claims mechanism.
+        # email and display name are mapped separately for human-readable profiles.
+        "$OCC" user_oidc:provider "Google" \
+          --clientid="$CLIENT_ID" \
+          --clientsecret-file="${clientSecretFile}" \
+          --discoveryuri="https://accounts.google.com/.well-known/openid-configuration" \
+          --mapping-uid="sub" \
+          --mapping-email="email" \
+          --mapping-display-name="name" \
+          --unique-uid=0
+
+        "$OCC" app:enable user_oidc || true
+        echo "nextcloud-oidc-config: Google OIDC provider configured."
+      '';
+    };
 
   # Internal nginx (module-managed), bound to localhost only; Caddy proxies to it.
   services.nginx = {
