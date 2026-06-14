@@ -16,13 +16,7 @@
       shared_preload_libraries = "vchord.so";
     };
 
-    # Ensure PostgreSQL is ready for Nextcloud and other services
-    ensureDatabases = [ "nextcloud" ];
-    ensureUsers = [
-      {
-        name = "nextcloud";
-        ensureDBOwnership = true;
-      }
-    ];
+    # Note: Nextcloud's database + role are created by its own module
+    # (services.nextcloud.database.createLocally = true).
   };
 }
