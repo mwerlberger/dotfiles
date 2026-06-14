@@ -82,4 +82,12 @@
     group = "root";
   };
 
+  # Nextcloud admin password — used only on first install (occ maintenance:install).
+  age.secrets.nextcloud-admin-pass = {
+    file = ../../../secrets/nextcloud-admin-pass.age;
+    mode = "0400";
+    owner = "nextcloud";
+    group = "nextcloud";
+  };
+
 }

@@ -17,4 +17,5 @@ in
   "secrets/mullvad-zrh.age".publicKeys = allKeys;
   "secrets/mullvad-privatekey-ch-zrh-wg-202.age".publicKeys = allKeys;
   "secrets/restic-password.age".publicKeys = allKeys;
+  "secrets/nextcloud-admin-pass.age".publicKeys = allKeys;
 }

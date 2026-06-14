@@ -23,6 +23,7 @@ in
       "/etc/nixos"
       "/var/lib"
       "/var/backups/db"
+      "/data/lake/nextcloud"
       "/data/lake/photos"
       "/data/lake/documents"
       "/home"

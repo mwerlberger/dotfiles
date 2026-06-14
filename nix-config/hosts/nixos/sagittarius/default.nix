@@ -60,18 +60,9 @@
   # Enable fish shell system-wide
   programs.fish.enable = true;
 
-  # Make sure the data lake permissions are set correctly
-  # Lets disable and see if we can do it purely with ZFS
-  # systemd.services.set-data-lake-permissions = {
-  #   description = "Set permissions for /data/lake ZFS dataset";
-  #   after = [ "zfs-mount.service" ];
-  #   wantedBy = [ "multi-user.target" ];
-  #   serviceConfig = {
-  #     Type = "oneshot";
-  #     ExecStart = "${pkgs.coreutils}/bin/chown mw:nas /data/lake";
-  #     ExecStartPost = "${pkgs.coreutils}/bin/chmod 0770 /data/lake";
-  #   };
-  # };
+  systemd.tmpfiles.rules = [
+    "d /data/lake 0770 root nas - -"
+  ];
 
 
   nix.settings = {
