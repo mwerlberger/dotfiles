@@ -1,4 +1,5 @@
 { config
+, lib
 , pkgs
 , pkgs-unstable
 , ...
@@ -36,6 +37,16 @@
     radarr = { };
     lidarr = { };
   };
+
+  # Media library dirs must be setgid (2xxx) so that movies/episodes imported
+  # by Radarr/Sonarr inherit the `nas` group instead of the service's primary
+  # group. Jellyfin reads media via the `nas` group only (mode 770, no "other"
+  # access); without setgid, new imports land as radarr:radarr / sonarr:sonarr
+  # and are invisible to Jellyfin with "Permission denied".
+  systemd.tmpfiles.rules = [
+    "d /data/lake/media/movies 2770 radarr nas -"
+    "d /data/lake/media/tv     2770 sonarr nas -"
+  ];
 
   # Prowlarr
   services.prowlarr = {
@@ -86,6 +97,8 @@
 
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
+      # Group-writable imports so Jellyfin (nas group) can read; see tmpfiles above.
+      UMask = lib.mkForce "0002";
     };
   };
 
@@ -122,6 +135,8 @@
 
     serviceConfig = {
       NetworkNamespacePath = "/run/netns/vpn";
+      # Group-writable imports so Jellyfin (nas group) can read; see tmpfiles above.
+      UMask = lib.mkForce "0002";
     };
   };
 
