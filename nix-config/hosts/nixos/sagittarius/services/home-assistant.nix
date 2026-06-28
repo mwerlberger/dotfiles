@@ -93,7 +93,10 @@ in
     # Integrations whose Python dependencies must be baked into the package.
     #   matter -> talks to services.matter-server (Matter controller)
     #   otbr/thread -> manage the local OpenThread Border Router (ZBT-2)
-    #   homekit -> HomeKit bridge to Apple Home
+    #   homekit -> HomeKit bridge: expose HA entities TO Apple Home
+    #   homekit_controller -> pull HomeKit accessories INTO HA (one controller
+    #     per accessory; non-Matter devices must be removed from Apple Home first)
+    #   apple_tv -> Apple TV remote/media entity
     extraComponents = [
       "default_config"
       "met"
@@ -102,6 +105,8 @@ in
       "otbr"
       "thread"
       "homekit"
+      "homekit_controller"
+      "apple_tv"
     ];
   };
 
