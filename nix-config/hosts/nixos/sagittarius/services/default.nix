@@ -13,7 +13,8 @@
     ./immich.nix
     ./jellyfin.nix
     ./paperless.nix
-    #./home-assistant.nix
+    ./home-assistant.nix
+    ./openthread-border-router.nix
     ./nextcloud.nix
     # ./pydio-cells.nix  # Docker version
     # ./pydio-cells-native.nix  # Native binary version
