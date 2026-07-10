@@ -2,7 +2,18 @@
 , username
 , ...
 }:
+let
+  # node_exporter reads *.prom files from here; the restic services write their
+  # health metrics into it (see services/restic.nix). Kept in sync by literal
+  # path in both files.
+  textfileDir = "/var/lib/node-exporter-textfile";
+in
 {
+  # World-readable dir owned by root: restic (root) writes, node-exporter reads.
+  systemd.tmpfiles.rules = [
+    "d ${textfileDir} 0755 root root -"
+  ];
+
   # 1. Enable Prometheus and configure it to scrape metrics from node_exporter
   services.prometheus = {
     enable = true;
@@ -20,6 +31,8 @@
   services.prometheus.exporters.node = {
     enable = true;
     enabledCollectors = [ "systemd" "zfs" "textfile" "filesystem" "loadavg" "meminfo" "netdev" "stat" ];
+    # The textfile collector is inert without a directory to read from.
+    extraFlags = [ "--collector.textfile.directory=${textfileDir}" ];
   };
 
   # 3. Enable Grafana for visualization
@@ -28,13 +41,31 @@
     enable = true;
     provision = {
       enable = true;
-      datasources.settings.datasources = [
+      datasources.settings = {
+        datasources = [
+          {
+            name = "Prometheus";
+            uid = "prometheus";
+            type = "prometheus";
+            access = "proxy";
+            url = "http://127.0.0.1:9090";
+            isDefault = true;
+          }
+        ];
+        # This host historically had Prometheus datasources with auto-generated
+        # uids ("Prometheus" and a stray lowercase "prometheus"). Pinning uid
+        # above collides with those on update ("data source not found"), so
+        # purge them by name first; provisioning then re-inserts cleanly with
+        # the stable uid. Safe/idempotent — nothing else owns this datasource.
+        deleteDatasources = [
+          { name = "Prometheus"; orgId = 1; }
+          { name = "prometheus"; orgId = 1; }
+        ];
+      };
+      dashboards.settings.providers = [
         {
-          name = "Prometheus";
-          type = "prometheus";
-          access = "proxy";
-          url = "http://127.0.0.1:9090";
-          isDefault = true;
+          name = "nix-dashboards";
+          options.path = "/etc/grafana-dashboards";
         }
       ];
     };
@@ -72,5 +103,9 @@
       };
     };
   };
+
+  # Provisioned dashboard visualising the restic backup/check health metrics
+  # emitted via the node_exporter textfile collector.
+  environment.etc."grafana-dashboards/backups.json".source = ./dashboards/backups.json;
 
 }
