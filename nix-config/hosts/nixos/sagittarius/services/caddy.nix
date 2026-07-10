@@ -14,9 +14,9 @@
       plugins = [
         "go.akpain.net/caddy-tailscale-auth@v0.1.7"
       ];
-      # Ask Nix to compute the vendor hash automatically; replace with the
-      # real hash once you've run `nix build`.
-      hash = "sha256-qcOByHUr7Lapz4jUe64449j97lgDJG2kejPpY/2MyXg=";
+      # Vendor hash for the plugin build. Update this whenever the Caddy
+      # version changes (a hash mismatch on `nix build` prints the new value).
+      hash = "sha256-3GLq8WZ+TcZt5Oe4DdnsH8X3a5Y7nQZIYih7sRIBoL0=";
     };
 
     globalConfig = ''

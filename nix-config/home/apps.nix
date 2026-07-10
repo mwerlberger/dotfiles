@@ -49,6 +49,10 @@
     enable = true;
     defaultEditor = true;
     vimAlias = true;
+    # Explicit to silence the stateVersion (pre-26.05) warnings.
+    # Ruby provider disabled (adopting the new 26.05 default) — shrinks the closure.
+    withRuby = false;
+    withPython3 = true;
   };
 
   # A modern replacement for ‘ls’
@@ -65,6 +69,9 @@
   programs.yazi = {
     enable = true;
     enableZshIntegration = true;
+    # Keep the legacy shell wrapper name (pre-26.05 default). Change to "y"
+    # to adopt the new default.
+    shellWrapperName = "yy";
     settings = {
       manager = {
         show_hidden = true;

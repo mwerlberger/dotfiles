@@ -27,8 +27,9 @@ in
       flowControl = false;
     };
     # REST API stays on 127.0.0.1:8081 for Home Assistant's `otbr` integration.
-    # Optional local web UI on 127.0.0.1:8082.
+    # Optional local web UI on 127.0.0.1:8083 (8082 is taken by homepage-dashboard).
     web.enable = true;
+    web.listenPort = 8083;
   };
 
   # Matter controller. Home Assistant's `matter` integration connects to its

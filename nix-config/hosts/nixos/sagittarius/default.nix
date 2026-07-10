@@ -17,6 +17,12 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.zfs.extraPools = [ "lake" ];
+  # Explicit to silence the 26.11 warning. `true` keeps current behavior:
+  # the root pool is force-imported even if it wasn't cleanly exported (e.g.
+  # after an unclean shutdown), which is safer for a headless/remote box that
+  # can't be recovered at a console. The new recommended default is `false`,
+  # which reduces the risk of importing a pool still in use by another system.
+  boot.zfs.forceImportRoot = true;
 
   # Power Management
   powerManagement.cpuFreqGovernor = "ondemand"; # or "powersave"
