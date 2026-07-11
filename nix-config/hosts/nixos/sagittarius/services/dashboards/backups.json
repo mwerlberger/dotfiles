@@ -1,0 +1,126 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 0,
+  "schemaVersion": 39,
+  "tags": ["backup", "restic"],
+  "time": { "from": "now-30d", "to": "now" },
+  "timezone": "browser",
+  "title": "Backups (restic)",
+  "uid": "restic-backups",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Backup status",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "restic_backup_success", "refId": "A", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "OK", "color": "green" }, "0": { "text": "FAILED", "color": "red" } } }
+          ],
+          "noValue": "NO DATA",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Check status",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "restic_check_success", "refId": "A", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "OK", "color": "green" }, "0": { "text": "FAILED", "color": "red" } } }
+          ],
+          "noValue": "NO DATA",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Time since last backup",
+      "description": "Turns red if a daily backup hasn't completed in 48h.",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "time() - restic_backup_last_run_timestamp_seconds", "refId": "A", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "NO DATA",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 172800 } ] }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Time since last check",
+      "description": "Turns red if the weekly check hasn't completed in 8 days.",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "time() - restic_check_last_run_timestamp_seconds", "refId": "A", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "background", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "NO DATA",
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 691200 } ] }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Last backup duration",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "restic_backup_duration_seconds", "refId": "A", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "s", "noValue": "NO DATA" } }
+    },
+    {
+      "type": "stat",
+      "title": "Last check duration",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "restic_check_duration_seconds", "refId": "A", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "s", "noValue": "NO DATA" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Backup & check success history",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "restic_backup_success", "legendFormat": "backup", "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "expr": "restic_check_success", "legendFormat": "check", "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "fillOpacity": 10, "pointSize": 5 }
+        }
+      }
+    }
+  ]
+}
