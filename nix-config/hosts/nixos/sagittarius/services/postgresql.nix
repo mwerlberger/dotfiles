@@ -11,13 +11,5 @@
       pgvector
       vectorchord
     ];
-
-    # Load vector extensions at startup
-    settings = {
-      shared_preload_libraries = "vchord.so";
-    };
-
-    # Note: Nextcloud's database + role are created by its own module
-    # (services.nextcloud.database.createLocally = true).
   };
 }
