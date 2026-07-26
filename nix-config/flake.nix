@@ -45,6 +45,9 @@
     # Secrets management (encrypted with age/SSH keys)
     agenix.url = "github:ryantm/agenix";
 
+    # Zen Browser overlay for nix-darwin
+    nix-darwin-browsers.url = "github:wuz/nix-darwin-browsers";
+
     # Homebrew including declarative tap management
     nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
     homebrew-core = {
@@ -76,7 +79,7 @@
       # );
     in
     lib.mkMerge [
-      (lib.mkDarwin "mw-mb-air-m2" inputs.nixpkgs-darwin [ ] [ ])
+      (lib.mkDarwin "mw-mb-air-m2" inputs.nixpkgs-darwin [ ./home/darwin.nix ] [ ])
       (lib.mkNixos "sagittarius" inputs.nixpkgs-stable [ ] [ ./modules/tailscale.nix ])
     ];
 }
