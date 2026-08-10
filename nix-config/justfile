@@ -1,6 +1,9 @@
 # All my hosts managed by nix
 darwin_hostname := "mw-mb-air-m2"
 nas_hostname := "sagittarius"
+# agenix looks for ~/.ssh/id_ed25519 etc. and fails with "No usable identity"
+# because this key has a non-default name. Always pass it explicitly.
+age_identity := env('HOME') / ".ssh/mw_id_es25519"
 
 # List all the just commands
 default:
@@ -80,6 +83,70 @@ nas-deploy:
 #     --extra-experimental-features 'nix-command flakes'
 
 #   sudo ./result/sw/bin/darwin-rebuild switch --flake .#{{hostname}} --show-trace --verbose --dry-run
+
+############################################################################
+#
+#  secrets (agenix)
+#
+############################################################################
+
+# Edit an encrypted secret.
+# Usage: just secret secrets/firefly-iii-importer-token.age
+[group('secrets')]
+secret file:
+  agenix -e {{file}} -i {{age_identity}}
+
+# Re-encrypt every secret after changing the recipients in secrets.nix
+[group('secrets')]
+secrets-rekey:
+  agenix --rekey -i {{age_identity}}
+
+# Verify every secrets/*.age file is really age-encrypted. This repo is public,
+# and a failed `agenix -e` can leave a plaintext value sitting inside the age
+# armor markers, which looks encrypted at a glance. Run before committing.
+[group('secrets')]
+secrets-check:
+  #!/usr/bin/env bash
+  set -uo pipefail
+  banner='age-encryption.org/v1'
+  fail=0
+  for f in secrets/*.age; do
+    # age writes either a raw binary file starting with the banner, or an
+    # ASCII-armored one wrapping base64 of that same binary. Accept both.
+    if head -c 21 "$f" | grep -aqF "$banner"; then
+      echo "  ok (binary)   $f"
+    elif head -n1 "$f" | grep -aqF 'BEGIN AGE ENCRYPTED FILE' \
+      && sed '1d;$d' "$f" | base64 -d 2>/dev/null | head -c 21 | grep -aqF "$banner"; then
+      echo "  ok (armored)  $f"
+    else
+      echo "  PLAINTEXT     $f"
+      fail=1
+    fi
+  done
+  [ "$fail" -eq 0 ] || { echo; echo "Some secrets are NOT encrypted. Do not commit."; exit 1; }
+
+############################################################################
+#
+#  Firefly III
+#
+############################################################################
+
+# Create Firefly III asset accounts from ~/.config/firefly/accounts.tsv.
+# Idempotent — re-run after adding accounts (Saxo, 3a, ...). Run on sagittarius.
+[group('firefly')]
+firefly-accounts:
+  ./scripts/firefly-accounts.sh
+
+# Same, but only show what would be created.
+[group('firefly')]
+firefly-accounts-dry:
+  DRY_RUN=1 ./scripts/firefly-accounts.sh
+
+# Convert UBS e-banking CSV export(s) into an importable CSV.
+# Usage: just ubs-convert /data/lake/documents/firefly-import/mwe-2026-07.csv
+[group('firefly')]
+ubs-convert +files:
+  ./scripts/ubs-csv-to-firefly.py {{files}}
 
 ############################################################################
 #

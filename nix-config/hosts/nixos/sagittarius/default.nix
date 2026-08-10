@@ -32,6 +32,15 @@
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
+  # Only the locales listed here get built into the locale archive. Firefly III
+  # calls setlocale(LC_MONETARY, "de_CH.utf8") to format CHF amounts and warns
+  # "unable to format monetary amounts" if the locale is missing, so de_CH has
+  # to be generated even though the system language is en_US.
+  i18n.supportedLocales = [
+    "C.UTF-8/UTF-8"
+    "en_US.UTF-8/UTF-8"
+    "de_CH.UTF-8/UTF-8"
+  ];
   # console = {
   #   font = "Lat2-Terminus16";
   #   keyMap = "us";

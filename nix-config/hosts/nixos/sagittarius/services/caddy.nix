@@ -110,4 +110,13 @@
 
   # Make the caddy user a member of the tailscale group so it can access the LocalAPI socket.
   users.users.caddy.extraGroups = [ "tailscale" ];
+
+  # Supplementary groups are only applied when a process starts, but a config
+  # change normally just *reloads* Caddy. Without this, adding a group here (or
+  # from another service module, e.g. to reach a PHP-FPM socket) leaves Caddy
+  # running with its old group set and returning 502s until someone restarts it
+  # by hand. Force a real restart whenever the group list changes.
+  systemd.services.caddy.restartTriggers = [
+    (builtins.toString config.users.users.caddy.extraGroups)
+  ];
 }
