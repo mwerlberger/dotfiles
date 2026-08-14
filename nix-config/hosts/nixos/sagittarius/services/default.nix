@@ -29,6 +29,7 @@
     ./homepage.nix
     ./homarr.nix
     ./spliit.nix
+    ./firefly-iii.nix
     ./restic.nix
   ];
 }

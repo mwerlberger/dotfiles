@@ -143,6 +143,20 @@
               icon = "nextcloud.png";
             };
           }
+          {
+            "Firefly III" = {
+              href = "https://sagittarius.taildb4b48.ts.net:8451";
+              description = "Personal finance manager";
+              icon = "firefly-iii.png";
+            };
+          }
+          {
+            "Firefly Importer" = {
+              href = "https://sagittarius.taildb4b48.ts.net:8452";
+              description = "Import UBS camt.053 statements";
+              icon = "firefly-iii.png";
+            };
+          }
           # {
           #   "Pydio Cells" = {
           #     href = "https://sagittarius.taildb4b48.ts.net:8448";

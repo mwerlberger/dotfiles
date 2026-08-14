@@ -90,4 +90,23 @@
     group = "nextcloud";
   };
 
+  # Laravel APP_KEY for Firefly III. Generate with:
+  #   echo "base64:$(head -c 32 /dev/urandom | base64)"
+  # Changing it makes existing encrypted DB columns unreadable.
+  age.secrets.firefly-iii-app-key = {
+    file = ../../../secrets/firefly-iii-app-key.age;
+    mode = "0400";
+    owner = "firefly-iii";
+    group = "firefly-iii";
+  };
+
+  # Firefly III Personal Access Token used by the data importer.
+  # Created in the UI: Options → Profile → OAuth → Personal Access Tokens.
+  age.secrets.firefly-iii-importer-token = {
+    file = ../../../secrets/firefly-iii-importer-token.age;
+    mode = "0400";
+    owner = "firefly-iii-data-importer";
+    group = "firefly-iii-data-importer";
+  };
+
 }

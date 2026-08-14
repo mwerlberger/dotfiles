@@ -18,4 +18,6 @@ in
   "secrets/mullvad-privatekey-ch-zrh-wg-202.age".publicKeys = allKeys;
   "secrets/restic-password.age".publicKeys = allKeys;
   "secrets/nextcloud-admin-pass.age".publicKeys = allKeys;
+  "secrets/firefly-iii-app-key.age".publicKeys = allKeys;
+  "secrets/firefly-iii-importer-token.age".publicKeys = allKeys;
 }
