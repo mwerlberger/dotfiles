@@ -22,13 +22,108 @@ let
 
   fireflyPkg = config.services.firefly-iii.package;
   importerPkg = config.services.firefly-iii-data-importer.package;
+  importerUser = config.services.firefly-iii-data-importer.user;
+  # Same interpreter php-fpm serves the importer with, so the CLI reads the very
+  # same cached config (and therefore the same API token).
+  importerPhp = "${importerPkg.phpPackage}/bin/php";
 
   fireflySocket = config.services.phpfpm.pools.firefly-iii.socket;
   importerSocket = config.services.phpfpm.pools.firefly-iii-data-importer.socket;
 
-  # Drop CAMT.053 / CSV exports here to import them from disk instead of
-  # uploading through the browser.
+  # Disk-based import. The web UI is upload-only — `importer:auto-import` is the
+  # only way to import from disk — so the layout is built around that command:
+  #
+  #   importDir/          scanned by auto-import: converted CSVs + _fallback.json
+  #   importDir/inbox/    drop raw UBS e-banking exports here
+  #   importDir/archive/  processed files are moved here after a successful run
+  #
+  # Raw exports are deliberately kept in a subdirectory: auto-import would
+  # happily feed them through _fallback.json and mis-map every column. It only
+  # scans one level deep, so a subdirectory is invisible to it.
   importDir = "/data/lake/documents/firefly-import";
+  importInbox = "${importDir}/inbox";
+  importArchive = "${importDir}/archive";
+
+  # `firefly-import` — convert UBS exports and run the importer in one step.
+  fireflyImport = pkgs.writeShellApplication {
+    name = "firefly-import";
+    runtimeInputs = [
+      pkgs.python3
+      pkgs.coreutils
+    ];
+    text = ''
+      convert_only=0
+      dry_run=0
+      for arg in "$@"; do
+        case "$arg" in
+          --convert-only) convert_only=1 ;;
+          --dry-run) dry_run=1 ;;
+          -h|--help)
+            cat <<'USAGE'
+      firefly-import [--convert-only] [--dry-run]
+
+      Converts every UBS CSV export in ${importInbox} into an importable CSV in
+      ${importDir}, then runs the Firefly III data importer over that directory
+      and moves what it processed into ${importArchive}.
+
+      One-time setup: run an import through the web UI, download the config JSON
+      and save it as ${importDir}/_fallback.json — it is applied to every file
+      that has no same-named .json companion.
+      USAGE
+            exit 0 ;;
+          *) echo "unknown argument: $arg" >&2; exit 2 ;;
+        esac
+      done
+
+      shopt -s nullglob
+      raw=(${importInbox}/*.csv ${importInbox}/*.CSV)
+      if [ ''${#raw[@]} -eq 0 ]; then
+        echo "no UBS exports in ${importInbox}"
+      else
+        echo "==> converting ''${#raw[@]} export(s)"
+        for f in "''${raw[@]}"; do
+          base=$(basename "$f" .csv); base=''${base%.CSV}
+          out="${importDir}/$base-firefly.csv"
+          if [ "$dry_run" = 1 ]; then
+            echo "    would convert $(basename "$f") -> $(basename "$out")"
+          else
+            python3 ${./../../../../scripts/ubs-csv-to-firefly.py} "$f" -o "$out"
+            mv -- "$f" "${importArchive}/$(basename "$f")"
+          fi
+        done
+      fi
+
+      [ "$convert_only" = 1 ] && exit 0
+
+      if [ ! -f ${importDir}/_fallback.json ]; then
+        echo "error: ${importDir}/_fallback.json is missing." >&2
+        echo "       auto-import ignores any CSV without a config. Run one import" >&2
+        echo "       through the web UI, download the JSON and save it there." >&2
+        exit 1
+      fi
+
+      pending=(${importDir}/*-firefly.csv)
+      if [ ''${#pending[@]} -eq 0 ]; then
+        echo "nothing to import"
+        exit 0
+      fi
+
+      if [ "$dry_run" = 1 ]; then
+        echo "==> would import ''${#pending[@]} file(s):"
+        printf '    %s\n' "''${pending[@]##*/}"
+        exit 0
+      fi
+
+      echo "==> importing ''${#pending[@]} file(s)"
+      sudo -u ${importerUser} ${importerPhp} \
+        ${importerPkg}/artisan importer:auto-import ${importDir}
+
+      for f in "''${pending[@]}"; do
+        mv -- "$f" "${importArchive}/$(basename "$f")"
+      done
+      echo "==> moved processed files to ${importArchive}"
+    '';
+  };
 
   # Raise PHP's tiny defaults so a full-year CAMT.053 export can be uploaded.
   uploadLimits = {
@@ -102,8 +197,16 @@ in
       FIREFLY_III_ACCESS_TOKEN_FILE = config.age.secrets.firefly-iii-importer-token.path;
 
       IMPORT_DIR_ALLOWLIST = importDir;
+      # Without this, auto-import needs a same-named .json beside every CSV and
+      # silently skips the ones that lack it. With it, a single _fallback.json in
+      # the directory covers them all — which is what makes the monthly run a
+      # one-liner instead of a config-file-shuffling exercise.
+      FALLBACK_IN_DIR = true;
     };
   };
+
+  # `firefly-import` on PATH: convert UBS exports, then run the importer.
+  environment.systemPackages = [ fireflyImport ];
 
   services.postgresql = {
     ensureDatabases = [ "firefly-iii" ];
@@ -122,9 +225,16 @@ in
     "firefly-iii-data-importer"
   ];
 
-  # The importer reads statements from here; `nas` so the share can drop files in.
+  # The importer has to walk /data/lake/documents (0770 mw:nas) to reach its own
+  # directory, so it needs the group — owning the leaf directory is not enough.
+  users.users.${importerUser}.extraGroups = [ "nas" ];
+
+  # setgid (2770) so files dropped by you or over the Samba share inherit `nas`
+  # and stay readable by the importer, instead of landing as <you>:users.
   systemd.tmpfiles.rules = [
-    "d ${importDir} 0770 firefly-iii-data-importer nas - -"
+    "d ${importDir} 2770 ${importerUser} nas - -"
+    "d ${importInbox} 2770 ${importerUser} nas - -"
+    "d ${importArchive} 2770 ${importerUser} nas - -"
   ];
 
   # The upstream module only orders after `postgresql.target`, which says nothing

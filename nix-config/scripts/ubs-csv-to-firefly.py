@@ -36,7 +36,11 @@ from pathlib import Path
 
 HEADER_STARTS = "Abschlussdatum"
 IBAN_RE = re.compile(r"Konto-Nr\.\s*IBAN:\s*([A-Z]{2}[0-9A-Z ]{13,32}?)\s*(?:;|$)")
+# The export preamble names the account the statement belongs to:
+#   IBAN:;CH88 0023 0230 1518 2740 V;
+OWN_IBAN_RE = re.compile(r"^IBAN:;\s*([A-Z]{2}[0-9A-Z ]{13,32}?)\s*;?\s*$", re.MULTILINE)
 OUT_FIELDS = [
+    "account_iban",
     "date",
     "value_date",
     "amount",
@@ -59,7 +63,8 @@ def subfields(value: str | None) -> list[str]:
     return [clean(p) for p in (value or "").split(";") if clean(p)]
 
 
-def read_ubs(path: Path) -> list[dict[str, str]]:
+def read_ubs(path: Path) -> tuple[str, list[dict[str, str]]]:
+    """Return (own IBAN from the preamble, transaction rows)."""
     # utf-8-sig: the export carries a BOM.
     text = path.read_text(encoding="utf-8-sig", newline="")
     lines = text.splitlines(keepends=True)
@@ -68,12 +73,22 @@ def read_ubs(path: Path) -> list[dict[str, str]]:
     )
     if header is None:
         raise SystemExit(f"{path}: no '{HEADER_STARTS}' header row found — not a UBS export?")
+
+    match = OWN_IBAN_RE.search("".join(lines[:header]))
+    own_iban = match.group(1).replace(" ", "").upper() if match else ""
+    if not own_iban:
+        print(
+            f"  WARNING: {path.name}: no account IBAN in the preamble; rows will\n"
+            f"           fall back to the config's default_account.",
+            file=sys.stderr,
+        )
+
     reader = csv.DictReader(io.StringIO("".join(lines[header:])), delimiter=";")
     # Trailing summary/blank lines have no booking date.
-    return [row for row in reader if clean(row.get("Buchungsdatum"))]
+    return own_iban, [row for row in reader if clean(row.get("Buchungsdatum"))]
 
 
-def convert_row(row: dict[str, str]) -> dict[str, str] | None:
+def convert_row(row: dict[str, str], own_iban: str) -> dict[str, str] | None:
     debit = clean(row.get("Belastung"))
     credit = clean(row.get("Gutschrift"))
     amount = debit or credit
@@ -99,6 +114,7 @@ def convert_row(row: dict[str, str]) -> dict[str, str] | None:
     notes = " | ".join(p for p in (clean(row.get("Beschreibung2")), desc3) if p)
 
     return {
+        "account_iban": own_iban,
         "date": clean(row.get("Buchungsdatum")),
         "value_date": clean(row.get("Valutadatum")),
         "amount": amount,
@@ -125,10 +141,10 @@ def main() -> int:
     seen: set[str] = set()
     duplicates = 0
     for path in args.inputs:
-        rows = read_ubs(path)
+        own_iban, rows = read_ubs(path)
         kept = 0
         for row in rows:
-            out = convert_row(row)
+            out = convert_row(row, own_iban)
             if out is None:
                 continue
             # Transaktions-Nr. is unique per transaction; guard against the same
