@@ -62,6 +62,7 @@
     gopls
     gotools
     graphite-cli
+    herdr
     ice-bar
     iperf3
     jq
