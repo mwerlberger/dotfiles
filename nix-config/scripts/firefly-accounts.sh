@@ -11,53 +11,20 @@
 #   name <TAB> account_role <TAB> IBAN
 # account_role is one of: defaultAsset savingAsset sharedAsset ccAsset cashWalletAsset
 # The IBAN column may be empty (account is created without one, but then it will
-# not auto-match during a camt.053 import until you fill it in).
+# not auto-match during an import until you fill it in).
 #
-# Talks to the loopback Caddy vhost, which bypasses tailscale_auth; auth is the
-# API token, so this only works while running on sagittarius itself.
 set -euo pipefail
 
-API="${FIREFLY_API:-http://127.0.0.1:8461}"
+. "$(dirname "$(readlink -f "$0")")/lib/firefly-api.sh"
+
 DATA="${FIREFLY_ACCOUNTS:-${XDG_CONFIG_HOME:-$HOME/.config}/firefly/accounts.tsv}"
 CURRENCY="${FIREFLY_CURRENCY:-CHF}"
-TOKEN_FILE="${FIREFLY_TOKEN_FILE:-/run/agenix/firefly-iii-importer-token}"
-DRY_RUN="${DRY_RUN:-0}"
-
-die() {
-  echo "error: $*" >&2
-  exit 1
-}
 
 [ -r "$DATA" ] || die "account list not found: $DATA
        Create it (see the header of this script for the format), or point
        FIREFLY_ACCOUNTS at another file."
 
-TOKEN="${FIREFLY_TOKEN:-}"
-if [ -z "$TOKEN" ]; then
-  TOKEN=$(sudo cat "$TOKEN_FILE") || die "cannot read token from $TOKEN_FILE"
-fi
-
-# api METHOD PATH [json-body] -> prints body, returns non-zero on HTTP >= 300
-api() {
-  local method=$1 path=$2 body=${3:-} out code
-  local -a args=(
-    -sS -X "$method" -w '\n%{http_code}'
-    -H 'Accept: application/json'
-    -H "Authorization: Bearer $TOKEN"
-  )
-  [ -n "$body" ] && args+=(-H 'Content-Type: application/json' -d "$body")
-  out=$(curl "${args[@]}" "$API$path")
-  code=${out##*$'\n'}
-  printf '%s' "${out%$'\n'*}"
-  [ "$code" -lt 300 ]
-}
-
-# Normalise an IBAN for comparison: strip whitespace, uppercase.
-norm() { printf '%s' "$1" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]'; }
-
-echo "==> Firefly III at $API"
-about=$(api GET /api/v1/about) || die "API unreachable or token rejected"
-echo "    version $(jq -r '.data.version' <<<"$about"), db $(jq -r '.data.driver' <<<"$about")"
+firefly_hello
 
 # --- currency ---------------------------------------------------------------
 # Accounts inherit the primary currency when currency_code is not honoured, and
