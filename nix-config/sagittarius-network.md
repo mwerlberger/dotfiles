@@ -1,37 +1,40 @@
-● Here's a comprehensive network configuration table for all services running on your Sagittarius NAS:
+# Sagittarius — Network Layout
 
-  | Service     | Local Port | Local IP (LAN)                   | VPN Namespace IP  | Tailscale Reverse Proxy            | Notes                            |
-  |-------------|------------|----------------------------------|-------------------|------------------------------------|----------------------------------|
-  | Caddy       | -          | -                                | -                 | sagittarius.taildb4b48.ts.net      | Status page                      |
-  | Prometheus  | 9090       | 127.0.0.1:9090                   | -                 | sagittarius.taildb4b48.ts.net:8442 | Monitoring                       |
-  | Grafana     | 3000       | 127.0.0.1:3000                   | -                 | sagittarius.taildb4b48.ts.net:8443 | Dashboards                       |
-  | Immich      | 2283       | 127.0.0.1:2283192.168.1.206:8444 | -                 | sagittarius.taildb4b48.ts.net:8444 | Photos (TS auth)Local LAN access |
-  | Jellyfin    | 8096       | 127.0.0.1:8096192.168.1.206:8445 | -                 | sagittarius.taildb4b48.ts.net:8445 | Media streamingLocal LAN access  |
-  | Navidrome   | 4534       | 127.0.0.1:4534                   | -                 | sagittarius.taildb4b48.ts.net:4533 | Music streaming                  |
-  | Homepage    | 8082       | 127.0.0.1:8082                   | -                 | sagittarius.taildb4b48.ts.net:8441 | Dashboard                        |
-  | Prowlarr    | 9696       | -                                | 10.200.200.2:9696 | sagittarius.taildb4b48.ts.net:9696 | VPN routed                       |
-  | Sonarr      | 8989       | -                                | 10.200.200.2:8989 | sagittarius.taildb4b48.ts.net:8989 | VPN routed                       |
-  | Radarr      | 7878       | -                                | 10.200.200.2:7878 | sagittarius.taildb4b48.ts.net:7878 | VPN routed                       |
-  | Lidarr      | 8686       | -                                | 10.200.200.2:8686 | sagittarius.taildb4b48.ts.net:8686 | VPN routed                       |
-  | Readarr     | 8787       | -                                | 10.200.200.2:8787 | sagittarius.taildb4b48.ts.net:8787 | VPN routed                       |
-  | qBittorrent | 8081       | -                                | 10.200.200.2:8081 | sagittarius.taildb4b48.ts.net:8080 | VPN routed                       |
-  | SABnzbd     | 8085       | -                                | 10.200.200.2:8085 | sagittarius.taildb4b48.ts.net:8090 | VPN routed                       |
+Service URLs, ports and firewall state live in
+[`hosts/nixos/sagittarius/README.md`](hosts/nixos/sagittarius/README.md). This file covers the
+host's network plumbing only.
 
-  Network Summary:
+## Interfaces
 
-  VPN Namespace Configuration:
-  - Host veth IP: 10.200.200.1/24
-  - VPN namespace veth IP: 10.200.200.2/24
-  - VPN External IP: 146.70.134.29 (Mullvad Zurich)
-  - Host External IP: 81.6.40.114
+| Interface | Address | Role |
+|-----------|---------|------|
+| `enp5s0` | `192.168.1.206/24` (+ `2a02:168:ff46::10/64`) | home LAN, default gateway `192.168.1.1` |
+| `enp6s0` | `192.168.2.207/24` | separate VLAN used as the VPN uplink, gateway `192.168.2.1` |
+| `tailscale0` | `100.119.78.108` | tailnet; a **trusted** firewall interface |
+| `veth-vpn` | `10.200.200.1` (host) ↔ `10.200.200.2` (namespace) | host ↔ VPN namespace link |
 
-  LAN Configuration:
-  - Primary Interface (enp5s0): 192.168.1.206
-  - Secondary Interface (enp6s0): Separate VLAN for VPN traffic
-  - Tailscale IP: 100.119.78.108
+Policy routing (`network.nix`) adds tables `201 enp6s0` and `200 vpn`;
+`setup-enp6s0-routing.service` installs the `enp6s0` table and a `from 192.168.2.207` rule at
+priority 300 so enp6s0 traffic (including DNS to 1.1.1.1 / 8.8.8.8 / 100.100.100.100) leaves via
+`192.168.2.1`.
 
-  Key Points:
-  - Services marked VPN routed run in the VPN namespace and all their traffic goes through Mullvad
-  - All services are accessible via Tailscale with authentication
-  - Immich and Jellyfin also have local LAN access (192.168.1.206)
-  - ARR stack services communicate with each other via localhost within the VPN namespace
+## VPN namespace
+
+`vpn-namespace.service` creates the `vpn` netns; `wg-quick-mullvad.service` brings up the
+`mullvad` WireGuard interface inside it.
+
+| | |
+|---|---|
+| Mullvad server | `ch-zrh-wg-202`, endpoint `46.19.136.226:51820` |
+| Tunnel address | `10.71.28.122/32`, `fc00:bbbb:bbbb:bb01::8:1c79/128` |
+| Tunnel DNS | `10.64.0.1` |
+| Exit IP (as of 2026-09-08) | `46.19.136.231` |
+| Host WAN IP | `81.6.40.114` |
+
+Services in the namespace: Sonarr, Radarr, Lidarr, Prowlarr, qBittorrent, SABnzbd. They listen on
+all interfaces *inside* the namespace and are reachable only through Caddy on the host, via
+`10.200.200.2`. Each one `bindsTo` `wg-quick-mullvad.service`, so a dropped tunnel stops them
+rather than leaking traffic.
+
+Namespace listeners: Prowlarr `9696`, Sonarr `8989`, Radarr `7878`, Lidarr `8686`,
+qBittorrent WebUI `8081` (BitTorrent port `25055` on the Mullvad interface), SABnzbd `8085`.
