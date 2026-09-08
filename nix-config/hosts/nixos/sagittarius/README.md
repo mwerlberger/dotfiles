@@ -31,6 +31,7 @@ How to read the tables below:
 | Radarr | `https://sagittarius.taildb4b48.ts.net:7878` | — | VPN ns `10.200.200.2:7878` | Tailscale |
 | qBittorrent | `https://sagittarius.taildb4b48.ts.net:8080` | — | VPN ns `10.200.200.2:8081` | Tailscale |
 | Immich | `https://sagittarius.taildb4b48.ts.net:8444` | `http://192.168.1.206:8088` | `127.0.0.1:2283` | Tailscale / none on LAN |
+| Bindery | `https://sagittarius.taildb4b48.ts.net:8787` | — | VPN ns `10.200.200.2:8787` | Tailscale (`set_headers` → `Remote-User`) |
 | SABnzbd | `https://sagittarius.taildb4b48.ts.net:8090` | — | VPN ns `10.200.200.2:8085` | Tailscale |
 | Home Assistant | `https://sagittarius.taildb4b48.ts.net:8123` | (vhost exists, port closed) | `127.0.0.1:8123` | Tailscale |
 | Homepage | `https://sagittarius.taildb4b48.ts.net:8441` | — | `127.0.0.1:8082` | Tailscale |
@@ -89,7 +90,6 @@ trusted interface, so they answer on the tailnet **without** `tailscale_auth` in
 | 5580 | matter-server websocket | used by the Home Assistant `matter` integration |
 | 8082 | Homepage dashboard | also served with auth on 8441 |
 | 8096 | Jellyfin | also served with auth on 8445 |
-| 8788 | rreading-glasses (Hardcover metadata API) | no vhost, no auth |
 | 9090 | Prometheus | also served with auth on 8442 |
 | 9100 | node_exporter | scraped by Prometheus |
 
@@ -160,10 +160,18 @@ only way in from outside.
 
 | Piece | State |
 |-------|-------|
-| Audiobookshelf | running, serves `/data/lake/media/audiobooks` and `/data/lake/media/books` on 8446 |
-| rreading-glasses | running on 8788 (Hardcover-backed Readarr metadata API), no consumer while Readarr is gone |
-| Readarr | removed from `arr.nix`; the old Homepage tile still points at the dead `:8787` |
-| Bookshelf | still disabled (`bookshelf.nix` not imported) |
+| Audiobookshelf | playback/library server on 8446, serves `/data/lake/media/audiobooks` and `/data/lake/media/books` |
+| Bindery | automation on 8787 — monitors authors, searches indexers, imports ebooks *and* audiobooks |
+
+Bindery replaces Readarr, which upstream archived in June 2025 when its Goodreads metadata backend
+went offline for good. It draws metadata from OpenLibrary, Google Books, Hardcover, DNB, Audnex and
+Audible, so it needs no separate metadata proxy — `rreading-glasses` was removed along with the
+disabled `bookshelf.nix` Readarr fork.
+
+It runs inside the VPN namespace like the rest of the \*arr stack and reaches qBittorrent
+(`127.0.0.1:8081`), SABnzbd (`127.0.0.1:8085`) and Prowlarr (`127.0.0.1:9696`) as localhost from in
+there. Everything else is configured in its web UI; see the first-run notes at the bottom of
+`services/bindery.nix`.
 
 ---
 
@@ -171,6 +179,9 @@ only way in from outside.
 
 | Service | File | Reason |
 |---------|------|--------|
-| Bookshelf | `bookshelf.nix` | `mkYarnPackage` removed in nixpkgs 26.05 |
 | Pydio Cells | `pydio-cells*.nix` | both variants commented out in `services/default.nix` |
-| Readarr | (was in `arr.nix`) | dropped; `rreading-glasses` remains as the metadata backend |
+| Home Assistant | — | enabled; the LAN vhost works only once 8123 is opened in the firewall |
+
+Removed outright: `readarr` (upstream archived), `bookshelf.nix` (Readarr fork, `mkYarnPackage`
+dropped in nixpkgs 26.05) and `rreading-glasses.nix` (metadata proxy with no remaining consumer) —
+all superseded by Bindery.

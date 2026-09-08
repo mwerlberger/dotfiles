@@ -31,10 +31,11 @@ priority 300 so enp6s0 traffic (including DNS to 1.1.1.1 / 8.8.8.8 / 100.100.100
 | Exit IP (as of 2026-09-08) | `46.19.136.231` |
 | Host WAN IP | `81.6.40.114` |
 
-Services in the namespace: Sonarr, Radarr, Lidarr, Prowlarr, qBittorrent, SABnzbd. They listen on
+Services in the namespace: Sonarr, Radarr, Lidarr, Prowlarr, Bindery, qBittorrent, SABnzbd. They listen on
 all interfaces *inside* the namespace and are reachable only through Caddy on the host, via
 `10.200.200.2`. Each one `bindsTo` `wg-quick-mullvad.service`, so a dropped tunnel stops them
 rather than leaking traffic.
 
 Namespace listeners: Prowlarr `9696`, Sonarr `8989`, Radarr `7878`, Lidarr `8686`,
-qBittorrent WebUI `8081` (BitTorrent port `25055` on the Mullvad interface), SABnzbd `8085`.
+Bindery `8787`, qBittorrent WebUI `8081` (BitTorrent port `25055` on the Mullvad interface),
+SABnzbd `8085`.

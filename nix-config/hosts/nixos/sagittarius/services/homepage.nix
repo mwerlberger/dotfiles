@@ -119,6 +119,13 @@
             };
           }
           {
+            "Bindery" = {
+              href = "https://sagittarius.taildb4b48.ts.net:8787";
+              description = "Ebook & audiobook automation";
+              icon = "mdi-bookshelf";
+            };
+          }
+          {
             "Prowlarr" = {
               href = "https://sagittarius.taildb4b48.ts.net:9696";
               description = "Indexer manager";
