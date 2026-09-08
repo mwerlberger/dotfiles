@@ -6,68 +6,127 @@
 |---|---|
 | Tailscale hostname | `sagittarius.taildb4b48.ts.net` |
 | Tailscale IP | `100.119.78.108` |
-| LAN IP | `192.168.1.206` |
+| LAN IP (enp5s0) | `192.168.1.206` |
+| VPN-uplink IP (enp6s0) | `192.168.2.207` |
 
-All Caddy-fronted Tailscale endpoints use HTTPS (cert from Tailscale). LAN endpoints use plain HTTP
-unless noted. Tailscale-protected services require an active tailnet session (enforced by the
-`tailscale_auth` Caddy plugin).
+How to read the tables below:
 
----
-
-## External Ports
-
-| Port | Service | Tailscale | LAN | Auth | Notes |
-|------|---------|:---------:|:---:|------|-------|
-| 22 | SSH | ✓ | ✓ | key / password | |
-| 80 | Caddy status | ✓ | — | none | health probe, returns 200 |
-| 2049 | NFS | ✓ | ✓ | — | NFSv4 only; all_squash → uid/gid 1000 |
-| 4533 | Navidrome | ✓ | — | Tailscale | music streaming |
-| 7878 | Radarr | ✓ | — | Tailscale | movie automation (runs inside VPN ns) |
-| 8080 | qBittorrent | ✓ | — | Tailscale | torrent client (runs inside VPN ns) |
-| 8088 | Immich | — | ✓ | none | LAN-only photo access |
-| 8090 | SABnzbd | ✓ | — | Tailscale | Usenet downloader (runs inside VPN ns) |
-| 8441 | Homepage | ✓ | — | Tailscale | main dashboard |
-| 8442 | Prometheus | ✓ | — | Tailscale | metrics scraper UI |
-| 8443 | Grafana | ✓ | — | Tailscale + proxy auth | metrics visualisation |
-| 8444 | Immich | ✓ | — | Tailscale | photo & video management |
-| 8445 | Jellyfin | ✓ | ✓ | Tailscale / none | media streaming |
-| 8446 | Audiobookshelf | ✓ | ✓ | Tailscale / none | audiobook streaming |
-| 8447 | Homarr | ✓ | — | Tailscale | customisable home page |
-| 8448 | Paperless | ✓ | ✓ | Tailscale / internal CA | document management |
-| 8449 | Spliit | ✓ | ✓ | Tailscale / internal CA | expense sharing |
-| 8450 | Nextcloud | ✓ | ✓ | Tailscale / none | file sync |
-| 8686 | Lidarr | ✓ | — | Tailscale | music automation (runs inside VPN ns) |
-| 8989 | Sonarr | ✓ | — | Tailscale | TV automation (runs inside VPN ns) |
-| 9696 | Prowlarr | ✓ | — | Tailscale | indexer manager (runs inside VPN ns) |
+- Caddy fronts everything user-facing. Tailscale vhosts use HTTPS with a Tailscale-issued cert and
+  are gated by the `tailscale_auth` plugin (an active tailnet session is required). LAN vhosts are
+  plain HTTP unless the table says `https` — Paperless, Spliit and Home Assistant use Caddy's
+  internal CA, so the browser will warn unless that CA is trusted.
+- `tailscale0` is a **trusted firewall interface** (`modules/tailscale.nix`), so anything bound to
+  `0.0.0.0` is reachable from the tailnet directly, bypassing Caddy and therefore `tailscale_auth`.
+  Those listeners are called out in [Direct listeners](#direct-listeners-not-behind-caddy).
+- LAN reachability needs both a Caddy vhost bound to `192.168.1.206` **and** an open firewall port.
 
 ---
 
-## Internal Ports (not directly accessible)
+## Web endpoints
 
-| Port | Service | Bind address |
-|------|---------|-------------|
-| 2019 | Caddy admin API | `127.0.0.1` |
-| 2283 | Immich server | `127.0.0.1` |
-| 3000 | Grafana | `127.0.0.1` |
-| 3001 | Spliit (container) | host network |
-| 4534 | Navidrome | `127.0.0.1` |
-| 6379 | Redis — Nextcloud | `127.0.0.1` |
-| 6380 | Redis — Paperless | `127.0.0.1` |
-| 7575 | Homarr (docker) | `127.0.0.1` |
-| 7878 | Radarr | VPN ns `10.200.200.2` |
-| 8000 | Audiobookshelf | `127.0.0.1` |
-| 8081 | qBittorrent | VPN ns `10.200.200.2` |
-| 8082 | Homepage dashboard | `127.0.0.1` |
-| 8085 | SABnzbd | VPN ns `10.200.200.2` |
-| 8096 | Jellyfin | default (all interfaces) |
-| 8447 | Nextcloud nginx backend | `127.0.0.1` |
-| 8686 | Lidarr | VPN ns `10.200.200.2` |
-| 8788 | rreading-glasses (Hardcover metadata API) | `0.0.0.0` — internal only, no Caddy vhost |
-| 8989 | Sonarr | VPN ns `10.200.200.2` |
-| 9090 | Prometheus | `127.0.0.1` |
-| 9100 | node_exporter | `127.0.0.1` |
-| 9696 | Prowlarr | VPN ns `10.200.200.2` |
-| 28981 | Paperless | `127.0.0.1` |
+| Service | Tailscale URL | LAN URL | Backend | Auth |
+|---------|---------------|---------|---------|------|
+| Caddy status | `https://sagittarius.taildb4b48.ts.net` | — | — | none, returns 200 |
+| Navidrome | `https://sagittarius.taildb4b48.ts.net:4533` | — | `127.0.0.1:4534` | Tailscale (+ proxy auth) |
+| Radarr | `https://sagittarius.taildb4b48.ts.net:7878` | — | VPN ns `10.200.200.2:7878` | Tailscale |
+| qBittorrent | `https://sagittarius.taildb4b48.ts.net:8080` | — | VPN ns `10.200.200.2:8081` | Tailscale |
+| Immich | `https://sagittarius.taildb4b48.ts.net:8444` | `http://192.168.1.206:8088` | `127.0.0.1:2283` | Tailscale / none on LAN |
+| SABnzbd | `https://sagittarius.taildb4b48.ts.net:8090` | — | VPN ns `10.200.200.2:8085` | Tailscale |
+| Home Assistant | `https://sagittarius.taildb4b48.ts.net:8123` | (vhost exists, port closed) | `127.0.0.1:8123` | Tailscale |
+| Homepage | `https://sagittarius.taildb4b48.ts.net:8441` | — | `127.0.0.1:8082` | Tailscale |
+| Prometheus | `https://sagittarius.taildb4b48.ts.net:8442` | — | `127.0.0.1:9090` | Tailscale |
+| Grafana | `https://sagittarius.taildb4b48.ts.net:8443` | — | `127.0.0.1:3000` | Tailscale + proxy auth |
+| Jellyfin | `https://sagittarius.taildb4b48.ts.net:8445` | `http://192.168.1.206:8445` | `127.0.0.1:8096` | Tailscale / none on LAN |
+| Audiobookshelf | `https://sagittarius.taildb4b48.ts.net:8446` | `http://192.168.1.206:8446` | `127.0.0.1:8000` | Tailscale / none on LAN |
+| Homarr | `https://sagittarius.taildb4b48.ts.net:8447` | — | `127.0.0.1:7575` (docker) | Tailscale |
+| Paperless | `https://sagittarius.taildb4b48.ts.net:8448` | `https://192.168.1.206:8448` | `127.0.0.1:28981` | Tailscale / internal CA |
+| Spliit | `https://sagittarius.taildb4b48.ts.net:8449` | `https://192.168.1.206:8449` | `127.0.0.1:3001` (docker) | Tailscale / internal CA |
+| Nextcloud | `https://sagittarius.taildb4b48.ts.net:8450` | `http://192.168.1.206:8450` | `127.0.0.1:8447` (nginx) | Tailscale / none on LAN |
+| Firefly III | `https://sagittarius.taildb4b48.ts.net:8451` | — | php-fpm socket | Tailscale (`set_headers` → remote user) |
+| Firefly III importer | `https://sagittarius.taildb4b48.ts.net:8452` | — | php-fpm socket | Tailscale only |
+| Lidarr | `https://sagittarius.taildb4b48.ts.net:8686` | — | VPN ns `10.200.200.2:8686` | Tailscale |
+| Sonarr | `https://sagittarius.taildb4b48.ts.net:8989` | — | VPN ns `10.200.200.2:8989` | Tailscale |
+| Prowlarr | `https://sagittarius.taildb4b48.ts.net:9696` | — | VPN ns `10.200.200.2:9696` | Tailscale |
+
+Firefly III is deliberately Tailscale-only (financial data, no LAN vhost). It also has a
+loopback-only vhost on `127.0.0.1:8461` that the data importer uses for API calls, because a request
+from localhost carries no tailnet identity and would be rejected by the public vhost.
+
+Home Assistant has a LAN vhost on `192.168.1.206:8123` (`tls internal`), but 8123 is **not** in the
+firewall's allowed ports, so LAN clients can't reach it — only the Tailscale URL works today. Open
+the port in `services/home-assistant.nix` if LAN access is wanted.
+
+Note the port reuse: **8447** is Homarr externally (on the Tailscale IP) and Nextcloud's internal
+nginx on `127.0.0.1`. Different bind addresses, so they coexist, but don't reuse 8447 elsewhere.
+
+---
+
+## Non-HTTP services
+
+| Port | Proto | Service | Reachable from |
+|------|-------|---------|----------------|
+| 22 | tcp | SSH | Tailscale + LAN |
+| 111 | tcp/udp | rpcbind (NFS) | Tailscale + LAN |
+| 139, 445 | tcp | Samba | LAN (+ Tailscale) |
+| 137, 138 | udp | NetBIOS | LAN |
+| 2049 | tcp | NFSv4 | Tailscale + LAN; NFSv4 only, `all_squash` → uid/gid 1000 |
+| 5353 | udp | mDNS (Avahi / OTBR) | LAN, `enp5s0` only |
+| 21063 | tcp | HomeKit bridge (Home Assistant) | LAN, `enp5s0` only |
+| 25055 | tcp/udp | qBittorrent BitTorrent port | inside VPN namespace, via Mullvad |
+| 41641 | udp | Tailscale | WAN |
+| 51820 | udp | WireGuard (Mullvad) | WAN |
+| 60000–61000 | udp | mosh | Tailscale + LAN |
+
+---
+
+## Direct listeners (not behind Caddy)
+
+These bind `0.0.0.0`/`*` rather than loopback. The LAN firewall blocks them, but `tailscale0` is a
+trusted interface, so they answer on the tailnet **without** `tailscale_auth` in front:
+
+| Port | Service | Note |
+|------|---------|------|
+| 5580 | matter-server websocket | used by the Home Assistant `matter` integration |
+| 8082 | Homepage dashboard | also served with auth on 8441 |
+| 8096 | Jellyfin | also served with auth on 8445 |
+| 8788 | rreading-glasses (Hardcover metadata API) | no vhost, no auth |
+| 9090 | Prometheus | also served with auth on 8442 |
+| 9100 | node_exporter | scraped by Prometheus |
+
+Loopback-only listeners (`127.0.0.1`), reachable only from the host itself:
+
+| Port | Service |
+|------|---------|
+| 2019 | Caddy admin API |
+| 2283 | Immich server |
+| 3000 | Grafana |
+| 3003 | Immich machine learning |
+| 4534 | Navidrome |
+| 5432 | PostgreSQL |
+| 6379 | Redis — Nextcloud |
+| 6380 | Redis — Paperless |
+| 7575 | Homarr (docker-proxy) |
+| 8000 | Audiobookshelf |
+| 8081 | otbr-agent |
+| 8083 | otbr-web (OpenThread Border Router UI) |
+| 8123 | Home Assistant |
+| 8447 | Nextcloud nginx backend |
+| 8461 | Firefly III, loopback vhost for the data importer |
+| 28981 | Paperless (granian) |
+
+---
+
+## Firewall
+
+Globally open TCP: `22`, `80`, `443` (Caddy's `openFirewall`), `139`, `445`, `2049`, `8088`, `8444`,
+`8445`, `8446`, `8447`, `8448`, `8449`, `8450`, `8451`, `8452`.
+Interface-scoped: `21063/tcp` and `5353/udp` on `enp5s0` only.
+
+`8444`, `8447`, `8451` and `8452` are open on every interface, but Caddy binds those vhosts to
+`100.119.78.108` only — there is no LAN listener, so they are effectively Tailscale-only.
+
+Ports 80 and 443 on the LAN IP serve Caddy's status page and the HTTP→HTTPS redirects that Caddy
+generates for the `tls internal` LAN vhosts (Paperless, Spliit, Home Assistant).
 
 ---
 
@@ -87,9 +146,24 @@ unless noted. Tailscale-protected services require an active tailnet session (en
 ## VPN Namespace
 
 The ARR stack (Sonarr, Radarr, Lidarr, Prowlarr), qBittorrent, and SABnzbd all run inside a
-dedicated network namespace (`vpn-namespace.service`) with a Mullvad WireGuard tunnel. Caddy reaches
-them via the veth peer at `10.200.200.2`. They are bound to the VPN namespace and stop if the tunnel
+dedicated network namespace (`vpn-namespace.service`) with a Mullvad WireGuard tunnel
+(`ch-zrh-wg-202`, endpoint `46.19.136.226:51820`). Caddy reaches them via the veth peer at
+`10.200.200.2` (host side `10.200.200.1`). They are bound to the namespace and stop if the tunnel
 drops (`bindsTo = wg-quick-mullvad.service`).
+
+Inside the namespace the services listen on all interfaces; the reverse-proxied ports above are the
+only way in from outside.
+
+---
+
+## Books & Audiobooks
+
+| Piece | State |
+|-------|-------|
+| Audiobookshelf | running, serves `/data/lake/media/audiobooks` and `/data/lake/media/books` on 8446 |
+| rreading-glasses | running on 8788 (Hardcover-backed Readarr metadata API), no consumer while Readarr is gone |
+| Readarr | removed from `arr.nix`; the old Homepage tile still points at the dead `:8787` |
+| Bookshelf | still disabled (`bookshelf.nix` not imported) |
 
 ---
 
@@ -98,6 +172,5 @@ drops (`bindsTo = wg-quick-mullvad.service`).
 | Service | File | Reason |
 |---------|------|--------|
 | Bookshelf | `bookshelf.nix` | `mkYarnPackage` removed in nixpkgs 26.05 |
-| Home Assistant | `home-assistant.nix` | commented out in `default.nix` |
-| Pydio Cells | `pydio-cells*.nix` | both variants commented out |
-| Readarr | (arr.nix) | replaced by `rreading-glasses` (Hardcover-backed metadata) |
+| Pydio Cells | `pydio-cells*.nix` | both variants commented out in `services/default.nix` |
+| Readarr | (was in `arr.nix`) | dropped; `rreading-glasses` remains as the metadata backend |

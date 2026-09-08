@@ -68,6 +68,13 @@
               icon = "navidrome.png";
             };
           }
+          {
+            "Audiobookshelf" = {
+              href = "https://sagittarius.taildb4b48.ts.net:8446";
+              description = "Audiobooks & ebooks";
+              icon = "audiobookshelf.png";
+            };
+          }
         ];
       }
       {
@@ -112,13 +119,6 @@
             };
           }
           {
-            "Readarr" = {
-              href = "https://sagittarius.taildb4b48.ts.net:8787";
-              description = "Book automation";
-              icon = "readarr.png";
-            };
-          }
-          {
             "Prowlarr" = {
               href = "https://sagittarius.taildb4b48.ts.net:9696";
               description = "Indexer manager";
@@ -139,7 +139,7 @@
           {
             "Nextcloud" = {
               href = "https://sagittarius.taildb4b48.ts.net:8450";
-              description = "Document management";
+              description = "File sync & sharing";
               icon = "nextcloud.png";
             };
           }
@@ -155,6 +155,13 @@
               href = "https://sagittarius.taildb4b48.ts.net:8452";
               description = "Import UBS camt.053 statements";
               icon = "firefly-iii.png";
+            };
+          }
+          {
+            "Spliit" = {
+              href = "https://sagittarius.taildb4b48.ts.net:8449";
+              description = "Shared expense tracking";
+              icon = "spliit.png";
             };
           }
           # {
