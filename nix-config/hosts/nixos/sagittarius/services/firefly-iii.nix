@@ -33,13 +33,13 @@ let
   # Disk-based import. The web UI is upload-only — `importer:auto-import` is the
   # only way to import from disk — so the layout is built around that command:
   #
-  #   importDir/          scanned by auto-import: converted CSVs + _fallback.json
+  #   importDir/          scanned by auto-import: converted CSV + its .json
   #   importDir/inbox/    drop raw UBS e-banking exports here
   #   importDir/archive/  processed files are moved here after a successful run
   #
   # Raw exports are deliberately kept in a subdirectory: auto-import would
-  # happily feed them through _fallback.json and mis-map every column. It only
-  # scans one level deep, so a subdirectory is invisible to it.
+  # happily feed them through and mis-map every column. It only scans one level
+  # deep, so a subdirectory is invisible to it.
   importDir = "/data/lake/documents/firefly-import";
   importInbox = "${importDir}/inbox";
   importArchive = "${importDir}/archive";
@@ -62,13 +62,20 @@ let
             cat <<'USAGE'
       firefly-import [--convert-only] [--dry-run]
 
-      Converts every UBS CSV export in ${importInbox} into an importable CSV in
+      Converts every UBS CSV export in ${importInbox} into one importable CSV in
       ${importDir}, then runs the Firefly III data importer over that directory
       and moves what it processed into ${importArchive}.
 
-      One-time setup: run an import through the web UI, download the config JSON
-      and save it as ${importDir}/_fallback.json — it is applied to every file
-      that has no same-named .json companion.
+      All exports are converted in a SINGLE pass on purpose. Incoming transfers
+      carry no counterparty IBAN, and the only thing tying the two sides of an
+      internal transfer together is a shared Transaktions-Nr. — which the
+      converter can only see when both statements are in the same batch. Convert
+      the whole period for every account at once, or the credit sides import as
+      deposits from revenue accounts named after their account holder.
+
+      Always run --convert-only first and read the report: it reconciles each
+      statement against its own Anfangssaldo/Schlusssaldo and lists the credits
+      it could not explain.
       USAGE
             exit 0 ;;
           *) echo "unknown argument: $arg" >&2; exit 2 ;;
@@ -77,32 +84,31 @@ let
 
       shopt -s nullglob
       raw=(${importInbox}/*.csv ${importInbox}/*.CSV)
+      stamp=$(date +%Y%m%d-%H%M%S)
+      # Deliberately not "ubs-*": raw exports are named by the bank or by you
+      # (ubs-cc.csv), and a cleanup glob over the converter's own output must
+      # not be able to match one of those. Ask how this comment came to exist.
+      out="${importDir}/firefly-batch-$stamp.csv"
+
       if [ ''${#raw[@]} -eq 0 ]; then
         echo "no UBS exports in ${importInbox}"
+      elif [ "$dry_run" = 1 ]; then
+        echo "==> would convert ''${#raw[@]} export(s) into $(basename "$out")"
+        printf '    %s\n' "''${raw[@]##*/}"
       else
-        echo "==> converting ''${#raw[@]} export(s)"
+        echo "==> converting ''${#raw[@]} export(s) into $(basename "$out")"
+        # One invocation with every file: this is what makes transfer pairing
+        # possible. A failure here (a statement that does not reconcile) leaves
+        # the inbox untouched so it can be re-run after fixing the export.
+        python3 ${./../../../../scripts/ubs-csv-to-firefly.py} "''${raw[@]}" -o "$out"
         for f in "''${raw[@]}"; do
-          base=$(basename "$f" .csv); base=''${base%.CSV}
-          out="${importDir}/$base-firefly.csv"
-          if [ "$dry_run" = 1 ]; then
-            echo "    would convert $(basename "$f") -> $(basename "$out")"
-          else
-            python3 ${./../../../../scripts/ubs-csv-to-firefly.py} "$f" -o "$out"
-            mv -- "$f" "${importArchive}/$(basename "$f")"
-          fi
+          mv -- "$f" "${importArchive}/$(basename "$f")"
         done
       fi
 
       [ "$convert_only" = 1 ] && exit 0
 
-      if [ ! -f ${importDir}/_fallback.json ]; then
-        echo "error: ${importDir}/_fallback.json is missing." >&2
-        echo "       auto-import ignores any CSV without a config. Run one import" >&2
-        echo "       through the web UI, download the JSON and save it there." >&2
-        exit 1
-      fi
-
-      pending=(${importDir}/*-firefly.csv)
+      pending=(${importDir}/firefly-batch-*.csv)
       if [ ''${#pending[@]} -eq 0 ]; then
         echo "nothing to import"
         exit 0
@@ -115,13 +121,29 @@ let
       fi
 
       echo "==> importing ''${#pending[@]} file(s)"
+      # auto-import exits non-zero if it skipped ANY row, and a row already in
+      # Firefly ([a115]) counts as skipped. Re-importing a file you already
+      # imported is normal here, so that alone must not look like a failure —
+      # but a validation problem ([a117] and friends) must.
+      log=$(mktemp)
+      trap 'rm -f "$log"' EXIT
+      set +e
       sudo -u ${importerUser} ${importerPhp} \
-        ${importerPkg}/artisan importer:auto-import ${importDir}
+        ${importerPkg}/artisan importer:auto-import ${importDir} 2>&1 | tee "$log"
+      set -e
+      if grep -oE '\[a[0-9]+\]' "$log" | grep -qv 'a115'; then
+        echo "==> import reported problems other than duplicates; see above" >&2
+        exit 1
+      fi
+      dupes=$(grep -c 'a115' "$log" || true)
+      [ "$dupes" -gt 0 ] && echo "==> $dupes row(s) already present, skipped"
 
       for f in "''${pending[@]}"; do
         mv -- "$f" "${importArchive}/$(basename "$f")"
+        [ -f "''${f%.csv}.json" ] && mv -- "''${f%.csv}.json" "${importArchive}/"
       done
       echo "==> moved processed files to ${importArchive}"
+      echo "    verify with: firefly-verify.sh ${importArchive}/*.csv"
     '';
   };
 
@@ -170,10 +192,13 @@ in
 
   # UBS Switzerland has no self-service open-banking API (Swiss banks sit behind
   # SIX bLink, which needs a business contract), so the supported path is file
-  # import: UBS E-Banking → Accounts → Export → "ISO 20022 (camt.053)". The data
-  # importer parses camt.053/camt.052 natively; CSV export works too but needs
-  # column mapping. Save the mapping as a config JSON afterwards to make repeat
-  # imports one click.
+  # import: UBS E-Banking → Konten → Bewegungen → Export → CSV.
+  #
+  # CSV is the only usable format. camt.053, which the importer parses natively
+  # and which carries structured counterparty accounts, is not offered for these
+  # private accounts. MT940 is — but it has no counterparty IBANs at all, no
+  # purchase dates, no FX detail, and drops transactions outright (47 entries
+  # against 60 CSV rows on one statement). See scripts/ubs-csv-to-firefly.py.
   services.firefly-iii-data-importer = {
     enable = true;
     virtualHost = "${host}:${toString importerPort}";
@@ -197,11 +222,12 @@ in
       FIREFLY_III_ACCESS_TOKEN_FILE = config.age.secrets.firefly-iii-importer-token.path;
 
       IMPORT_DIR_ALLOWLIST = importDir;
-      # Without this, auto-import needs a same-named .json beside every CSV and
-      # silently skips the ones that lack it. With it, a single _fallback.json in
-      # the directory covers them all — which is what makes the monthly run a
-      # one-liner instead of a config-file-shuffling exercise.
-      FALLBACK_IN_DIR = true;
+      # auto-import pairs each CSV with a same-named .json, and the converter
+      # emits exactly that — built from the column list it just wrote, so the
+      # roles can never drift from the file they describe. The directory-wide
+      # _fallback.json this used to rely on was maintained by hand and would
+      # silently mis-map every column once the converter changed.
+      FALLBACK_IN_DIR = false;
     };
   };
 
@@ -316,16 +342,27 @@ in
     importerPort
   ];
 
-  # Bootstrap, in order:
-  #   1. Deploy. secrets/firefly-iii-app-key.age already holds a generated key;
-  #      secrets/firefly-iii-importer-token.age is still a placeholder.
+  # Bootstrap, in order (steps 1-3 are done on this host):
+  #   1. Deploy. secrets/firefly-iii-app-key.age holds the generated key.
   #   2. Open https://${host}:${toString fireflyPort} — the Tailscale login
   #      auto-creates the first user and gives it the owner role.
   #   3. Options → Profile → OAuth → "Create new Personal Access Token", then
   #        agenix -e secrets/firefly-iii-importer-token.age   # paste the token
   #      and redeploy (or: systemctl restart firefly-iii-data-importer-setup
   #      phpfpm-firefly-iii-data-importer).
-  #   4. Import a UBS camt.053 export at https://${host}:${toString importerPort}.
+  #   4. Seed the accounts, then set their opening balances from the earliest
+  #      export of each — both read tables kept outside this public repo:
+  #        scripts/firefly-accounts.sh
+  #        scripts/firefly-opening-balances.sh --force ${importInbox}/*.csv
+  #   5. Drop every account's export for the period into ${importInbox} and
+  #        firefly-import --convert-only   # read the reconciliation report
+  #        firefly-import
+  #        scripts/firefly-verify.sh ${importArchive}/*.csv
+  #   6. Categories: scripts/firefly-rules.sh, then apply the rule group to the
+  #      transactions already imported (Rules → group → "Apply rule group").
+  #
+  # `scripts/firefly-undo-import.sh TAG` deletes an import by its tag, so a bad
+  # run is fully reversible.
   #
   # Note: the data importer ships a hardcoded Laravel APP_KEY upstream (it keeps
   # no persistent data), so its session cookies are not secret. `tailscale_auth`

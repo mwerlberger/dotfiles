@@ -10,54 +10,25 @@
 # Format is three tab-separated columns, '#' comments and blank lines ignored:
 #   name <TAB> account_role <TAB> IBAN
 # account_role is one of: defaultAsset savingAsset sharedAsset ccAsset cashWalletAsset
+# ccAsset rows also get credit_card_type=monthlyFull and a monthly_payment_date
+# (override with FIREFLY_CC_PAYMENT_DATE=YYYY-MM-DD), which Firefly requires.
 # The IBAN column may be empty (account is created without one, but then it will
-# not auto-match during a camt.053 import until you fill it in).
+# not auto-match during an import until you fill it in).
 #
-# Talks to the loopback Caddy vhost, which bypasses tailscale_auth; auth is the
-# API token, so this only works while running on sagittarius itself.
 set -euo pipefail
 
-API="${FIREFLY_API:-http://127.0.0.1:8461}"
+. "$(dirname "$(readlink -f "$0")")/lib/firefly-api.sh"
+
 DATA="${FIREFLY_ACCOUNTS:-${XDG_CONFIG_HOME:-$HOME/.config}/firefly/accounts.tsv}"
 CURRENCY="${FIREFLY_CURRENCY:-CHF}"
-TOKEN_FILE="${FIREFLY_TOKEN_FILE:-/run/agenix/firefly-iii-importer-token}"
-DRY_RUN="${DRY_RUN:-0}"
-
-die() {
-  echo "error: $*" >&2
-  exit 1
-}
+# Only used for ccAsset rows; the day of the month the card is settled.
+CC_PAYMENT_DATE="${FIREFLY_CC_PAYMENT_DATE:-$(date +%Y-%m-01)}"
 
 [ -r "$DATA" ] || die "account list not found: $DATA
        Create it (see the header of this script for the format), or point
        FIREFLY_ACCOUNTS at another file."
 
-TOKEN="${FIREFLY_TOKEN:-}"
-if [ -z "$TOKEN" ]; then
-  TOKEN=$(sudo cat "$TOKEN_FILE") || die "cannot read token from $TOKEN_FILE"
-fi
-
-# api METHOD PATH [json-body] -> prints body, returns non-zero on HTTP >= 300
-api() {
-  local method=$1 path=$2 body=${3:-} out code
-  local -a args=(
-    -sS -X "$method" -w '\n%{http_code}'
-    -H 'Accept: application/json'
-    -H "Authorization: Bearer $TOKEN"
-  )
-  [ -n "$body" ] && args+=(-H 'Content-Type: application/json' -d "$body")
-  out=$(curl "${args[@]}" "$API$path")
-  code=${out##*$'\n'}
-  printf '%s' "${out%$'\n'*}"
-  [ "$code" -lt 300 ]
-}
-
-# Normalise an IBAN for comparison: strip whitespace, uppercase.
-norm() { printf '%s' "$1" | tr -d '[:space:]' | tr '[:lower:]' '[:upper:]'; }
-
-echo "==> Firefly III at $API"
-about=$(api GET /api/v1/about) || die "API unreachable or token rejected"
-echo "    version $(jq -r '.data.version' <<<"$about"), db $(jq -r '.data.driver' <<<"$about")"
+firefly_hello
 
 # --- currency ---------------------------------------------------------------
 # Accounts inherit the primary currency when currency_code is not honoured, and
@@ -80,7 +51,12 @@ have_name=$(jq -r '.data[].attributes.name' <<<"$existing")
 
 created=0 skipped=0 failed=0
 
-while IFS=$'\t' read -r name role iban; do
+# Split on \001, not on tab: bash counts tab as IFS *whitespace* and collapses
+# runs of it, so a row with an empty middle column ("Wise EUR" has no IBAN)
+# would silently shift every later field one to the left.
+while IFS=$'\001' read -r name role iban key currency; do
+  # 5th column overrides the default; a Wise EUR balance is not a CHF account.
+  acct_currency=${currency:-$CURRENCY}
   # skip comments and blanks
   [ -z "${name// /}" ] && continue
   case "$name" in \#*) continue ;; esac
@@ -101,8 +77,9 @@ while IFS=$'\t' read -r name role iban; do
   body=$(jq -n \
     --arg name "$name" \
     --arg role "$role" \
-    --arg cur "$CURRENCY" \
+    --arg cur "$acct_currency" \
     --arg iban "$niban" \
+    --arg ccdate "$CC_PAYMENT_DATE" \
     '{
        name: $name,
        type: "asset",
@@ -111,22 +88,28 @@ while IFS=$'\t' read -r name role iban; do
        active: true,
        include_net_worth: true
      }
-     + (if $iban == "" then {} else {iban: $iban} end)')
+     + (if $iban == "" then {} else {iban: $iban} end)
+     # ccAsset is the only role with extra required fields: Firefly rejects it
+     # without a credit_card_type and a monthly_payment_date. "monthlyFull" is
+     # the only type it accepts.
+     + (if $role == "ccAsset"
+        then {credit_card_type: "monthlyFull", monthly_payment_date: $ccdate}
+        else {} end)')
 
   if [ "$DRY_RUN" = 1 ]; then
-    echo "  would create  $name ($role)${niban:+ $niban}"
+    echo "  would create  $name ($role/$acct_currency)${niban:+ $niban}"
     created=$((created + 1))
     continue
   fi
 
   if resp=$(api POST /api/v1/accounts "$body"); then
-    echo "  created  $name ($role)${niban:+ $niban}"
+    echo "  created  $name ($role/$acct_currency)${niban:+ $niban}"
     created=$((created + 1))
   else
     echo "  FAILED   $name: $(jq -r '.message // .' <<<"$resp" 2>/dev/null || printf '%s' "$resp")"
     failed=$((failed + 1))
   fi
-done <"$DATA"
+done < <(tr '\t' '\001' <"$DATA")
 
 echo
 echo "created $created, skipped $skipped, failed $failed"
