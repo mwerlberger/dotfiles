@@ -111,4 +111,11 @@ done
 
 echo
 echo "set $set, skipped $skipped, failed $failed"
+if [ "$set" -eq 0 ] && [ "$skipped" -eq 0 ]; then
+  echo
+  echo "  NO BALANCES SET — no export carried an IBAN, Von and Anfangssaldo." >&2
+  echo "  A custom date range omits the balances; export a defined statement" >&2
+  echo "  period instead." >&2
+  exit 2
+fi
 [ "$failed" -eq 0 ]

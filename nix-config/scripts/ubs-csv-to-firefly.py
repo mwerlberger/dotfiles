@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import io
 import json
 import re
@@ -72,6 +73,9 @@ REASON_RE = re.compile(r"Zahlungsgrund:\s*([^;]+)")
 # the emitted config derives `roles` from this, so the two cannot drift apart.
 FIELD_ROLES = {
     "account_iban": "account-iban",
+    # Fallback for accounts with no IBAN (a Wise currency balance, say). The
+    # importer prefers the IBAN when both are present.
+    "account_name": "account-name",
     "date": "date_transaction",
     "book_date": "date_book",
     "process_date": "date_process",
@@ -84,11 +88,28 @@ FIELD_ROLES = {
     "opposing_iban": "opposing-iban",
     "description": "description",
     "notes": "note",
+    # Only the credit-card export supplies this (its `Branche` column). Bank
+    # rows leave it empty and are categorised by the Firefly rules instead.
+    "category": "category-name",
 }
 OUT_FIELDS = list(FIELD_ROLES)
 
 DEFAULT_ACCOUNTS_TSV = Path.home() / ".config/firefly/accounts.tsv"
 DEFAULT_PAYEES_TSV = Path.home() / ".config/firefly/payees.tsv"
+DEFAULT_BRANCHEN_TSV = Path.home() / ".config/firefly/branchen.tsv"
+
+
+def is_zero(amount: str) -> bool:
+    """Firefly rejects a zero amount ("Der Wert muss grösser als Null sein").
+
+    UBS emits them: a "Saldo Dienstleistungspreisabschluss" row for a month with
+    no fee is a statement line, not a transaction. Emitting them turns a clean
+    import into a non-zero exit and hides real failures.
+    """
+    try:
+        return abs(float(amount)) < 0.005
+    except ValueError:
+        return False
 
 
 def clean(value: str | None) -> str:
@@ -160,6 +181,10 @@ class Statement:
                 f"       account — refusing to convert."
             )
 
+    def convert(self) -> list[dict[str, str]]:
+        rows = (convert_row(r, self.own_iban, self.details) for r in self.rows)
+        return [r for r in rows if r is not None]
+
     def check(self) -> list[str]:
         """Verify the statement against the bank's own totals.
 
@@ -196,6 +221,445 @@ class Statement:
         return problems
 
 
+CARD_HEADER_STARTS = "Kontonummer;Kartennummer"
+CARD_TOTALS = "Total Kartenbuchungen"
+# Buchungstext is fixed-width for card purchases — merchant 0..24, town 25..37,
+# ISO country 38..40:
+#   "SITIBONDO S.A.S.         LAIGUEGLIA   ITA"
+# Splitting on runs of spaces looks tempting and is wrong: "LEDER  SCHUH AG" and
+# "UBER   *EATS" contain their own runs. Account-level rows ("2002 LSV-ZAHLUNG",
+# "1.75% ZUSCHLAG CHF IM AUSLAND") are short and have no country, so the country
+# code is what tells the two layouts apart.
+CARD_MERCHANT_END = 25
+CARD_COUNTRY = slice(38, 41)
+
+
+def card_payee(text: str | None) -> str:
+    """Merchant name out of a fixed-width Buchungstext."""
+    padded = (text or "").replace("\n", " ")
+    country = padded[CARD_COUNTRY].strip()
+    if len(padded) >= 41 and len(country) == 3 and country.isalpha():
+        return clean(padded[:CARD_MERCHANT_END])
+    return clean(padded)
+
+
+def iso_date(value: str) -> str:
+    """DD.MM.YYYY -> YYYY-MM-DD. The card export uses the Swiss format."""
+    value = clean(value)
+    m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})$", value)
+    return f"{m.group(3)}-{m.group(2)}-{m.group(1)}" if m else value
+
+
+class CardStatement:
+    """A UBS credit-card export.
+
+    Shares no columns with the bank export and, awkwardly, carries no
+    transaction number — see synthetic_id() — so it gets its own reader that
+    emits the same OUT_FIELDS as the bank one. Everything downstream (payee
+    normalisation, pairing, the sidecar, the report) then works unchanged.
+    """
+
+    def __init__(self, path: Path, cards: dict[str, str], branchen: dict[str, str]):
+        # ISO-8859-1, and the first line is a spreadsheet hint ("sep=;").
+        lines = path.read_text(encoding="latin-1", newline="").splitlines(keepends=True)
+        header = next(
+            (i for i, l in enumerate(lines) if l.startswith(CARD_HEADER_STARTS)), None
+        )
+        if header is None:
+            raise SystemExit(f"{path}: no '{CARD_HEADER_STARTS}' header row found.")
+
+        self.path = path
+        self.branchen = branchen
+        reader = csv.DictReader(io.StringIO("".join(lines[header:])), delimiter=";")
+        all_rows = list(reader)
+        self.rows = [r for r in all_rows if clean(r.get("Einkaufsdatum"))]
+
+        # The trailing "Total Kartenbuchungen" line is this format's equivalent
+        # of Anfangssaldo/Schlusssaldo: the only way to prove nothing was lost.
+        self.totals: tuple[str, str] | None = None
+        for r in all_rows:
+            if CARD_TOTALS in " ".join(clean(v) for v in r.values() if v):
+                self.totals = (clean(r.get("Belastung")), clean(r.get("Gutschrift")))
+
+        account = re.sub(r"\s+", "", clean(self.rows[0]["Kontonummer"])).casefold() if self.rows else ""
+        record = cards.get(account)
+        self.own_iban = record["iban"] if record else ""
+        self.own_name = record["name"] if record else ""
+        if not record:
+            raise SystemExit(
+                f"{path}: card account '{clean(self.rows[0]['Kontonummer']) if self.rows else '?'}'\n"
+                f"       is not in the 4th column of accounts.tsv. Without it every row\n"
+                f"       would fall back to default_account and land in the wrong\n"
+                f"       account — refusing to convert."
+            )
+
+        dates = sorted(iso_date(r.get("Einkaufsdatum")) for r in self.rows)
+        # Same shape as the bank reader's preamble facts, so the report and the
+        # opening-balance logic do not need to know which format they are on.
+        self.facts = {
+            "von": dates[0] if dates else "",
+            "bis": dates[-1] if dates else "",
+            "opening": "", "closing": "", "count": "",
+        }
+
+        # Settlements: the card being paid off. The bank statement already books
+        # these as a transfer INTO the card account, so importing them again
+        # credits the card twice. They have no Kartennummer because they belong
+        # to the account, not to a card.
+        self.settlements = [
+            r
+            for r in self.rows
+            if not clean(r.get("Kartennummer")) and clean(r.get("Gutschrift"))
+        ]
+
+    def check(self) -> list[str]:
+        problems = []
+        if self.totals:
+            for label, idx, col in (("debit", 0, "Belastung"), ("credit", 1, "Gutschrift")):
+                stated = self.totals[idx]
+                if not stated:
+                    continue
+                got = sum(float(number(clean(r[col]))) for r in self.rows if clean(r[col]))
+                if abs(got - float(number(stated))) > 0.005:
+                    problems.append(
+                        f"{label} total mismatch: rows add to {got:.2f}, but "
+                        f"'{CARD_TOTALS}' says {number(stated)}"
+                    )
+        return problems
+
+    def synthetic_id(self, row: dict[str, str], seen: dict[str, int]) -> str:
+        """A stable id for a file that ships none.
+
+        Firefly de-duplicates on external-id, so without this a re-import would
+        double every charge. Hashing the row's own values keeps it deterministic
+        across exports; the occurrence counter keeps two identical charges on one
+        day distinct.
+        """
+        key = "|".join(
+            clean(row.get(f))
+            for f in (
+                "Kontonummer", "Kartennummer", "Einkaufsdatum", "Buchung",
+                "Buchungstext", "Betrag", "Originalwährung", "Belastung", "Gutschrift",
+            )
+        )
+        seen[key] = seen.get(key, 0) + 1
+        digest = hashlib.sha1(f"{key}#{seen[key]}".encode()).hexdigest()[:20]
+        return f"ubscc-{digest}"
+
+    def convert(self) -> list[dict[str, str]]:
+        out, seen = [], {}
+        for row in self.rows:
+            if row in self.settlements:
+                continue
+            debit, credit = number(clean(row.get("Belastung"))), number(clean(row.get("Gutschrift")))
+            if not (debit or credit):
+                continue
+            amount = f"-{debit}" if debit else credit
+            if is_zero(amount):
+                continue
+
+            payee = card_payee(row.get("Buchungstext"))
+            raw_payee = clean(row.get("Buchungstext"))
+
+            foreign_amount = foreign_currency = ""
+            original, currency = clean(row.get("Originalwährung")), clean(row.get("Währung"))
+            if original and currency and original != currency:
+                foreign_amount = number(clean(row.get("Betrag")))
+                if amount.startswith("-") and not foreign_amount.startswith("-"):
+                    foreign_amount = f"-{foreign_amount}"
+                foreign_currency = original
+
+            branche = clean(row.get("Branche"))
+            notes = " | ".join(
+                p for p in (
+                    raw_payee,
+                    f"Branche: {branche}" if branche else "",
+                    f"Kurs: {clean(row.get('Kurs'))}" if clean(row.get("Kurs")) else "",
+                    f"Karte: {clean(row.get('Kartennummer'))}" if clean(row.get("Kartennummer")) else "",
+                ) if p
+            )
+            out.append({
+                "account_iban": self.own_iban,
+                "account_name": self.own_name,
+                "date": iso_date(row.get("Einkaufsdatum")),
+                "book_date": iso_date(row.get("Buchung")),
+                "process_date": "",
+                "amount": amount,
+                "currency": currency or "CHF",
+                "foreign_amount": foreign_amount,
+                "foreign_currency": foreign_currency,
+                "external_id": self.synthetic_id(row, seen),
+                "opposing_name": payee,
+                "opposing_iban": "",
+                "description": payee,
+                "category": self.branchen.get(branche.casefold(), ""),
+                "notes": notes,
+                "_reason": "",
+                "_kind": branche,
+                "_own": "",
+                "_branche": branche,
+            })
+        return out
+
+
+SWISSCARD_HEADER = "Transaction date,Description,Merchant"
+WISE_HEADER = "ID,Status,Richtung"
+
+
+class SwisscardStatement:
+    """A Swisscard credit-card export.
+
+    The tidiest of the three: `Merchant` is already a clean name and
+    `Merchant Category` a usable category, so almost nothing has to be salvaged
+    from free text. `Amount` is signed — debits positive, credits negative — so
+    `Debit/Credit` only confirms what the sign already says.
+    """
+
+    def __init__(self, path: Path, cards: dict[str, dict[str, str]], branchen: dict[str, str]):
+        with path.open(encoding="utf-8-sig", newline="") as fh:
+            self.rows = [r for r in csv.DictReader(fh) if clean(r.get("Transaction date"))]
+        self.path = path
+
+        card = re.sub(r"\s+", "", clean(self.rows[0]["Card number"])).casefold() if self.rows else ""
+        record = cards.get(card)
+        if not record:
+            raise SystemExit(
+                f"{path}: card '{clean(self.rows[0]['Card number']) if self.rows else '?'}' is not\n"
+                f"       in the 4th column of accounts.tsv — refusing to guess which account\n"
+                f"       this statement belongs to."
+            )
+        self.own_iban, self.own_name = record["iban"], record["name"]
+        self.branchen = branchen
+
+        # Paying the card off. The bank statement books these as a transfer into
+        # the card, so importing them again credits the card twice. A refund is
+        # also a credit, so the sign alone is not enough to tell them apart —
+        # a settlement has no merchant and is categorised "Payment".
+        self.settlements = [
+            r
+            for r in self.rows
+            if not clean(r.get("Merchant")) and clean(r.get("Merchant Category")) == "Payment"
+        ]
+        dates = sorted(iso_date(r.get("Transaction date")) for r in self.rows)
+        self.facts = {"von": dates[0] if dates else "", "bis": dates[-1] if dates else "",
+                      "opening": "", "closing": "", "count": ""}
+
+    def check(self) -> list[str]:
+        return []
+
+    def convert(self) -> list[dict[str, str]]:
+        out, seen = [], {}
+        for row in self.rows:
+            if row in self.settlements:
+                continue
+            signed = number(clean(row.get("Amount")))
+            if not signed or is_zero(signed):
+                continue
+            # A debit is money out, so Firefly's sign is the opposite of theirs.
+            amount = signed[1:] if signed.startswith("-") else f"-{signed}"
+
+            foreign_amount = foreign_currency = ""
+            fc, fa = clean(row.get("Foreign Currency")), number(clean(row.get("Amount in foreign currency")))
+            if fc and fa:
+                foreign_currency = fc
+                foreign_amount = f"-{fa}" if amount.startswith("-") else fa
+
+            payee = clean(row.get("Merchant")) or clean(row.get("Description"))
+            category = clean(row.get("Merchant Category"))
+            key = "|".join(clean(row.get(f)) for f in (
+                "Transaction date", "Description", "Card number", "Amount",
+                "Foreign Currency", "Amount in foreign currency"))
+            seen[key] = seen.get(key, 0) + 1
+            out.append({
+                "account_iban": self.own_iban,
+                "account_name": self.own_name,
+                "date": iso_date(row.get("Transaction date")),
+                "book_date": "",
+                "process_date": "",
+                "amount": amount,
+                "currency": clean(row.get("Currency")) or "CHF",
+                "foreign_amount": foreign_amount,
+                "foreign_currency": foreign_currency,
+                "external_id": "swc-" + hashlib.sha1(f"{key}#{seen[key]}".encode()).hexdigest()[:20],
+                "opposing_name": payee,
+                "opposing_iban": "",
+                "description": payee,
+                "category": self.branchen.get(category.casefold(), ""),
+                "notes": " | ".join(p for p in (
+                    clean(row.get("Description")),
+                    f"Kategorie: {category}" if category else "",
+                    clean(row.get("Registered Category")),
+                ) if p),
+                "_reason": "", "_kind": category, "_own": "", "_branche": category,
+            })
+        return out
+
+
+class WiseStatement:
+    """A Wise export.
+
+    Two things make it unlike the card exports. It has a real unique `ID`, so no
+    hash is needed. And Wise holds a balance per currency: `Ausgangswährung`
+    says which one a payment came out of, so one file feeds several Firefly
+    accounts, matched through `wise:<CUR>` keys in accounts.tsv.
+
+    Fees sit in their own column and are NOT included in
+    `Ausgangsbetrag (nach Gebühren)` — that figure is exactly
+    `Zielbetrag / Wechselkurs`. The amount that actually left the balance is the
+    two added together.
+    """
+
+    def __init__(self, path: Path, cards: dict[str, dict[str, str]], branchen: dict[str, str]):
+        with path.open(encoding="utf-8-sig", newline="") as fh:
+            self.rows = [r for r in csv.DictReader(fh) if clean(r.get("ID"))]
+        self.path = path
+        self.cards = cards
+        self.branchen = branchen
+
+        currencies = {clean(r.get("Ausgangswährung")).upper() for r in self.rows}
+        missing = [c for c in sorted(currencies) if c and f"wise:{c}".casefold() not in cards]
+        if missing:
+            raise SystemExit(
+                f"{path}: no account for Wise balance(s) {', '.join(missing)}.\n"
+                f"       Add a row to accounts.tsv whose 4th column is 'wise:{missing[0]}'\n"
+                f"       and whose 5th is the currency."
+            )
+
+        # Topping the balance up from a bank account: the bank side books it.
+        self.settlements = [r for r in self.rows if clean(r.get("Richtung")).upper() == "IN"]
+        dates = sorted(clean(r.get("Abgeschlossen am"))[:10] for r in self.rows)
+        self.facts = {"von": dates[0] if dates else "", "bis": dates[-1] if dates else "",
+                      "opening": "", "closing": "", "count": ""}
+        self.own_iban = ""
+        self.own_name = "Wise"
+
+    def check(self) -> list[str]:
+        return []
+
+    def convert(self) -> list[dict[str, str]]:
+        out = []
+        for row in self.rows:
+            if row in self.settlements:
+                continue
+            source = clean(row.get("Ausgangswährung")).upper()
+            account = self.cards[f"wise:{source}".casefold()]
+            amount_src = number(clean(row.get("Ausgangsbetrag (nach Gebühren)")))
+            fee = number(clean(row.get("Betrag der Ausgangsgebühr")))
+            # The fee is only part of this amount when it was taken in the same
+            # currency the money left in.
+            if fee and clean(row.get("Währung der Ausgangsgebühr")).upper() == source:
+                amount_src = f"{float(amount_src) + float(fee):.2f}"
+            if is_zero(amount_src):
+                continue
+
+            target_cur = clean(row.get("Zielwährung")).upper()
+            target_amt = number(clean(row.get("Zielbetrag (nach Gebühren)")))
+            payee = clean(row.get("Name des Empfängers"))
+            neutral = clean(row.get("Richtung")).upper() == "NEUTRAL"
+
+            row_out = {
+                "account_iban": account["iban"],
+                "account_name": account["name"],
+                "date": clean(row.get("Abgeschlossen am"))[:10]
+                or clean(row.get("Erstellt am"))[:10],
+                "book_date": "",
+                "process_date": "",
+                "amount": f"-{amount_src}",
+                "currency": source or "CHF",
+                "foreign_amount": f"-{target_amt}" if target_cur != source and target_amt else "",
+                "foreign_currency": target_cur if target_cur != source else "",
+                "external_id": clean(row.get("ID")),
+                "opposing_name": payee,
+                "opposing_iban": "",
+                "description": payee,
+                "category": self.branchen.get(clean(row.get("Kategorie")).casefold(), ""),
+                "notes": " | ".join(p for p in (
+                    f"Wise {clean(row.get('Richtung'))} {clean(row.get('Status'))}",
+                    f"Kategorie: {clean(row.get('Kategorie'))}" if clean(row.get("Kategorie")) else "",
+                    f"Kurs: {clean(row.get('Wechselkurs'))}" if clean(row.get("Wechselkurs")) else "",
+                    f"Gebühr: {fee} {clean(row.get('Währung der Ausgangsgebühr'))}" if fee else "",
+                ) if p),
+                "_reason": "", "_kind": clean(row.get("Kategorie")), "_own": "",
+                "_branche": clean(row.get("Kategorie")),
+            }
+            if neutral:
+                # Moving your own money between Wise balances: a transfer, and
+                # the far side is the account for the target currency.
+                target = self.cards.get(f"wise:{target_cur}".casefold())
+                if target:
+                    row_out["opposing_name"] = target["name"]
+                    row_out["opposing_iban"] = target["iban"]
+                    row_out["_own"] = target["name"]
+                    row_out["description"] = f"Wise {source} to {target_cur}"
+                    row_out["category"] = ""
+            out.append(row_out)
+        return out
+
+
+def read_statement(path: Path, cards: dict[str, dict[str, str]], branchen: dict[str, str]):
+    """Bank export or credit-card export? They share nothing but a `.csv`."""
+    head = path.read_bytes()[:400].decode("latin-1", "replace").lstrip("\ufeff")
+    if head.startswith("sep=") or CARD_HEADER_STARTS in head:
+        return CardStatement(path, cards, branchen)
+    if head.startswith(SWISSCARD_HEADER):
+        return SwisscardStatement(path, cards, branchen)
+    if head.startswith(WISE_HEADER):
+        return WiseStatement(path, cards, branchen)
+    return Statement(path)
+
+
+def load_branchen(path: Path | None) -> dict[str, str]:
+    """UBS merchant category -> your Firefly category.
+
+    Card payee strings are close to useless ("PAYPAL *SONOFATAILO  71994155"),
+    but the Branche column is clean. Rules still run afterwards and win when a
+    payee matches, so this only fills the gap.
+    """
+    if not path or not path.is_file():
+        return {}
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) >= 2 and parts[0].strip() and parts[1].strip():
+            out[parts[0].strip().casefold()] = parts[1].strip()
+    return out
+
+
+def load_accounts(path: Path | None) -> list[dict[str, str]]:
+    """accounts.tsv as records.
+
+        name <TAB> role <TAB> IBAN [<TAB> source key [<TAB> currency]]
+
+    The source key is how a statement that names no IBAN finds its account: a
+    credit card's own account or card number, or a token like `wise:EUR` for an
+    export that identifies nothing at all.
+    """
+    if not path or not path.is_file():
+        return []
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        parts = (line.split("\t") + ["", "", "", ""])[:5]
+        if not parts[0].strip():
+            continue
+        out.append({
+            "name": parts[0].strip(),
+            "role": parts[1].strip(),
+            "iban": norm_iban(parts[2]),
+            "key": re.sub(r"\s+", "", parts[3]).casefold(),
+            "currency": parts[4].strip().upper() or "CHF",
+        })
+    return out
+
+
+def load_cards(path: Path | None) -> dict[str, dict[str, str]]:
+    """Source key -> the account record it names."""
+    return {a["key"]: a for a in load_accounts(path) if a["key"]}
+
+
 def load_own_ibans(path: Path | None) -> tuple[dict[str, str], set[str]]:
     """(IBAN -> account name, all account names) from the accounts.tsv.
 
@@ -221,7 +685,7 @@ def load_own_ibans(path: Path | None) -> tuple[dict[str, str], set[str]]:
     return known, names
 
 
-def load_payees(path: Path | None) -> list[tuple[re.Pattern[str], str, str, bool]]:
+def load_payees(path: Path | None) -> list[tuple[re.Pattern[str], str, str, str]]:
     """Payee normalization table: `pattern <TAB> canonical name`.
 
     Firefly matches expense and revenue accounts by *name* (it deliberately
@@ -240,11 +704,15 @@ def load_payees(path: Path | None) -> list[tuple[re.Pattern[str], str, str, bool
     account, her fund account and her savings account in the same statement.
     Only the IBAN tells them apart, so it has to win.
 
-    Returns (pattern, canonical name, original pattern text, matches on IBAN).
+    A fourth form, `kind:Bancomat`, matches the transaction KIND (Beschreibung2)
+    instead of the payee — see below.
+
+    Returns (pattern, canonical name, original pattern text, what it matches on:
+    "iban" | "kind" | "name"). IBAN and kind patterns are evaluated first.
     """
     if not path or not path.is_file():
         return []
-    names, ibans = [], []
+    names, ibans, kinds = [], [], []
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -254,12 +722,19 @@ def load_payees(path: Path | None) -> list[tuple[re.Pattern[str], str, str, bool
         pattern, canonical = parts[0].strip(), parts[1].strip()
         if pattern.startswith("iban:"):
             iban = norm_iban(pattern[5:])
-            ibans.append((re.compile(f"^{re.escape(iban)}$"), canonical, pattern, True))
+            ibans.append((re.compile(f"^{re.escape(iban)}$"), canonical, pattern, "iban"))
+        elif pattern.startswith("kind:"):
+            # Matches UBS's Beschreibung2 ("Bezug UBS Bancomat"), not the payee.
+            # Cash withdrawals need this: the payee is whichever machine you
+            # used, so a name rule breaks at the next unfamiliar one.
+            kinds.append(
+                (re.compile(re.escape(pattern[5:].strip()), re.I), canonical, pattern, "kind")
+            )
         elif pattern.startswith("re:"):
-            names.append((re.compile(pattern[3:], re.I), canonical, pattern, False))
+            names.append((re.compile(pattern[3:], re.I), canonical, pattern, "name"))
         else:
-            names.append((re.compile(re.escape(pattern), re.I), canonical, pattern, False))
-    return ibans + names
+            names.append((re.compile(re.escape(pattern), re.I), canonical, pattern, "name"))
+    return ibans + kinds + names
 
 
 def convert_row(
@@ -275,6 +750,8 @@ def convert_row(
     # UBS already signs debits negative; be defensive in case a variant does not.
     if debit and not debit.startswith("-"):
         amount = f"-{debit}"
+    if is_zero(amount):
+        return None
 
     # A standing-order parent says only "Diverse Daueraufträge" and carries no
     # counterparty. Its single detail row has both, so borrow them; a batch with
@@ -304,6 +781,7 @@ def convert_row(
 
     return {
         "account_iban": own_iban,
+        "account_name": "",
         # Abschlussdatum is when the payment actually happened; Buchungsdatum is
         # up to three days later. They differ on ~70% of rows.
         "date": (
@@ -323,6 +801,7 @@ def convert_row(
         "opposing_name": opposing_name,
         "opposing_iban": opposing_iban,
         "description": opposing_name or kind or "UBS transaction",
+        "category": "",
         "notes": " | ".join(
             dict.fromkeys(
                 p
@@ -369,7 +848,7 @@ def pair_transfers(
                 dropped.append(row)
                 continue
         kept.append(row)
-        if row["opposing_iban"] in own or row["_own"]:
+        if (row["opposing_iban"] and row["opposing_iban"] in own) or row["_own"]:
             transfers.append(row)
 
     for row in transfers:
@@ -445,6 +924,12 @@ def main() -> int:
         "--no-config", action="store_true", help="do not write the sidecar .json"
     )
     ap.add_argument(
+        "--branchen",
+        type=Path,
+        default=DEFAULT_BRANCHEN_TSV,
+        help=f"credit-card merchant-category map (default: {DEFAULT_BRANCHEN_TSV})",
+    )
+    ap.add_argument(
         "--explain-payees",
         action="store_true",
         help="list which raw payee names each pattern absorbed (catches an "
@@ -456,9 +941,19 @@ def main() -> int:
         args.inputs[0].stem + "-firefly.csv"
     )
 
-    statements = [Statement(p) for p in args.inputs]
+    cards = load_cards(args.own_ibans)
+    accounts = load_accounts(args.own_ibans)
+    branchen = load_branchen(args.branchen)
+    statements = [read_statement(p, cards, branchen) for p in args.inputs]
     own, own_names = load_own_ibans(args.own_ibans)
-    own.update({s.own_iban: s.own_iban for s in statements if s.own_iban not in own})
+    # An empty own_iban must never enter this map: a statement that spans several
+    # accounts (Wise) has none, and "" would then match every row whose
+    # counterparty IBAN is blank — which is most of them.
+    own.update({
+        s.own_iban: s.own_iban
+        for s in statements
+        if s.own_iban and s.own_iban not in own
+    })
     payees = load_payees(args.payees)
 
     log = sys.stderr
@@ -468,17 +963,14 @@ def main() -> int:
     duplicates = 0
     for st in statements:
         problems = st.check()
-        label = own.get(st.own_iban, st.own_iban)
+        label = own.get(st.own_iban) or getattr(st, "own_name", "") or st.own_iban
         period = f"{st.facts['von']}..{st.facts['bis']}"
         print(f"  {st.path.name}: {len(st.rows)} rows  {label}  {period}", file=log)
         for problem in problems:
             print(f"    ERROR: {problem}", file=log)
             failed = True
 
-        for row in st.rows:
-            out = convert_row(row, st.own_iban, st.details)
-            if out is None:
-                continue
+        for out in st.convert():
             # Guard against the same statement being passed twice (overlapping
             # export ranges). Transfer pairs legitimately share an id, so only
             # skip a repeat that is not the opposite side of one already seen.
@@ -504,11 +996,12 @@ def main() -> int:
     used_patterns: set[str] = set()
     absorbed: dict[str, set[str]] = defaultdict(set)
     for row in converted:
-        if row["opposing_iban"] in own:
+        if row["opposing_iban"] and row["opposing_iban"] in own:
             # Already an internal transfer; it is named after the account below.
             continue
-        for pattern, canonical, raw, on_iban in payees:
-            if not pattern.search(row["opposing_iban"] if on_iban else row["opposing_name"]):
+        for pattern, canonical, raw, against in payees:
+            field = {"iban": "opposing_iban", "kind": "_kind"}.get(against, "opposing_name")
+            if not pattern.search(row[field]):
                 continue
             # A rule pointing at one of your own accounts cannot apply to a row
             # that already names a counterparty IBAN somewhere else: the payment
@@ -590,6 +1083,57 @@ def main() -> int:
             f"    if imported later).",
             file=log,
         )
+
+    # Every card reader exposes .settlements; report them all, not just one
+    # vendor's, or a missing bank statement stays invisible.
+    dropped_settlements = [
+        (st, r) for st in statements for r in getattr(st, "settlements", [])
+    ]
+    if dropped_settlements:
+        def settled(row):
+            for field in ("Gutschrift", "Amount", "Ausgangsbetrag (nach Gebühren)"):
+                if clean(row.get(field)):
+                    return abs(float(number(clean(row[field]))))
+            return 0.0
+
+        def settled_label(row):
+            for field in ("Buchungstext", "Description", "Name des Empfängers"):
+                if clean(row.get(field)):
+                    return clean(row[field])
+            return "?"
+
+        def settled_date(row):
+            for field in ("Einkaufsdatum", "Transaction date"):
+                if clean(row.get(field)):
+                    return iso_date(row[field])
+            return clean(row.get("Abgeschlossen am"))[:10]
+
+        total = sum(settled(r) for _, r in dropped_settlements)
+        print(
+            f"\n  {len(dropped_settlements)} card settlement(s) dropped, CHF {total:.2f} — "
+            f"the bank statement\n    already books these as a transfer into the card "
+            f"account. If a period's bank\n    statement is missing from this batch, its "
+            f"payment is missing too:",
+            file=log,
+        )
+        for st, r in dropped_settlements:
+            label = own.get(st.own_iban) or getattr(st, "own_name", "?")
+            print(
+                f"    {label:16s} +{settled(r):>9.2f} {settled_date(r)}  {settled_label(r)[:44]}",
+                file=log,
+            )
+
+    # Unmapped Branche values: the card's only good categorisation signal.
+    unmapped = defaultdict(int)
+    for st in statements:
+        if isinstance(st, CardStatement):
+            for row in st.convert():
+                if row["_branche"] and not row["category"]:
+                    unmapped[row["_branche"]] += 1
+    if unmapped:
+        print(f"\n  {len(unmapped)} Branche value(s) not in branchen.tsv:", file=log)
+        for name, count in sorted(unmapped.items(), key=lambda kv: -kv[1]):
+            print(f"    {count:3d}  {name}", file=log)
 
     # Credits with no debit to explain them. If one of these is really an
     # internal transfer, its sending statement was missing from the batch and

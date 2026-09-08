@@ -8,9 +8,11 @@ which needs a business contract — so everything here is built around **file im
 
 ## Quick reference
 
-```bash
+Shell is fish.
+
+```fish
 cd ~/dotfiles/nix-config
-D=/data/lake/documents/firefly-import
+set D /data/lake/documents/firefly-import
 
 # 0. drop every account's export for the period into $D/inbox/
 
@@ -20,6 +22,11 @@ firefly-import                                               # convert + import
 scripts/firefly-verify.sh $D/archive/*.csv                   # prove it is complete
 scripts/firefly-rules.sh --apply                             # categories (after edits)
 ```
+
+The scripts are bash with their own shebang and the executable bit set, so they run
+unchanged from fish; only the surrounding shell syntax differs (`set D ...`, not `D=...`).
+A `DRY_RUN=1 scripts/...` prefix works as-is — fish has supported prefix assignments since
+3.1.
 
 Order matters only in one place: `firefly-import` moves raw exports from `inbox/` to
 `archive/`, so run `firefly-opening-balances.sh` against `inbox/` *before* the first
@@ -49,6 +56,37 @@ CSV is the only usable format. Both alternatives were checked against real state
 - **camt.053** would be ideal (structured counterparty accounts on both debits and credits)
   but UBS does not offer it for private accounts.
 
+## Credit cards
+
+Three card exports are supported, each detected automatically by its header — drop them in
+`inbox/` alongside the bank exports and run the same commands.
+
+| | UBS card | Swisscard | Wise |
+|---|---|---|---|
+| encoding / separator | ISO-8859-1, `sep=;` | UTF-8, comma | UTF-8, comma |
+| transaction id | none — synthesised | none — synthesised | real (`CARD_TRANSACTION-…`) |
+| merchant | fixed-width, cols 0–24 | `Merchant`, already clean | `Name des Empfängers` |
+| category | `Branche` | `Merchant Category` | `Kategorie` |
+| currencies | one | one | **one balance per currency** |
+
+**Settlements are always dropped.** Paying a card off appears on both sides — as a debit in
+the bank statement and a credit in the card statement — but only the bank side carries the
+counterparty IBAN that makes it a transfer. The card-side row is therefore skipped and
+reported. Each vendor marks it differently: UBS by an empty `Kartennummer`, Swisscard by an
+empty `Merchant` with category `Payment` (a refund is also a credit, so the sign is not
+enough), Wise by `Richtung = IN`. The report lists every one, so a period whose bank
+statement is missing from Firefly is visible rather than silent.
+
+**Wise holds a balance per currency.** `Ausgangswährung` says which one a payment came out
+of, so one file feeds several Firefly accounts, matched through `wise:<CUR>` keys in
+`accounts.tsv`. Its `NEUTRAL` rows are conversions between your own balances and become
+cross-currency transfers. Wise's fees sit in their own column and are *not* included in
+`Ausgangsbetrag (nach Gebühren)` — the converter adds them, so the amount matches what
+actually left the balance.
+
+**Card opening balances cannot be derived** — none of the exports carries a balance line, and
+a statement that starts mid-history omits whatever debt was carried in. Set them once by hand.
+
 ## Configuration lives outside this repo
 
 This repo is public, so the tables holding IBANs and a record of where you shop are kept in
@@ -56,9 +94,10 @@ This repo is public, so the tables holding IBANs and a record of where you shop 
 
 | File | Format | Purpose |
 |---|---|---|
-| `accounts.tsv` | `name <TAB> role <TAB> IBAN` | your asset accounts. `role` is one of `defaultAsset` `savingAsset` `sharedAsset` `ccAsset` `cashWalletAsset`; IBAN may be empty |
+| `accounts.tsv` | `name <TAB> role <TAB> IBAN [<TAB> key [<TAB> currency]]` | your asset accounts. `role` is one of `defaultAsset` `savingAsset` `sharedAsset` `ccAsset` `cashWalletAsset`. The key is how a statement naming no IBAN finds its account (a card number, or `wise:EUR`); currency defaults to CHF |
 | `payees.tsv` | `pattern <TAB> canonical name` | normalizes counterparty names — decides which **account** a transaction lands in |
 | `rules.tsv` | `category <TAB> keyword\|keyword` | decides which **category** it gets |
+| `branchen.tsv` | `vendor category <TAB> category` | maps a card export's own merchant category onto yours |
 
 Adding or renaming a category touches `rules.tsv` only. You'd edit `payees.tsv` only when a
 merchant's UBS spelling needs cleaning up so a keyword can match it.
@@ -95,7 +134,7 @@ Watch for over-broad patterns. Trailing whitespace is stripped, so a regex must 
 a literal space: `re:^(M|Migros) ` silently becomes `^(M|Migros)` and swallows every payee
 starting with M. To audit:
 
-```bash
+```fish
 python3 scripts/ubs-csv-to-firefly.py $D/inbox/*.csv -o /tmp/x.csv --explain-payees
 ```
 
@@ -193,7 +232,7 @@ just don't hand-edit a *generated* rule, it will be overwritten.
 
 ### `scripts/firefly-undo-import.sh`
 
-```bash
+```fish
 scripts/firefly-undo-import.sh                  # list import tags
 scripts/firefly-undo-import.sh "<tag>"          # roll that import back
 scripts/firefly-undo-import.sh --purge-deleted  # unblock a re-import after a UI delete

@@ -85,7 +85,10 @@ let
       shopt -s nullglob
       raw=(${importInbox}/*.csv ${importInbox}/*.CSV)
       stamp=$(date +%Y%m%d-%H%M%S)
-      out="${importDir}/ubs-$stamp.csv"
+      # Deliberately not "ubs-*": raw exports are named by the bank or by you
+      # (ubs-cc.csv), and a cleanup glob over the converter's own output must
+      # not be able to match one of those. Ask how this comment came to exist.
+      out="${importDir}/firefly-batch-$stamp.csv"
 
       if [ ''${#raw[@]} -eq 0 ]; then
         echo "no UBS exports in ${importInbox}"
@@ -105,7 +108,7 @@ let
 
       [ "$convert_only" = 1 ] && exit 0
 
-      pending=(${importDir}/ubs-*.csv)
+      pending=(${importDir}/firefly-batch-*.csv)
       if [ ''${#pending[@]} -eq 0 ]; then
         echo "nothing to import"
         exit 0
@@ -118,8 +121,22 @@ let
       fi
 
       echo "==> importing ''${#pending[@]} file(s)"
+      # auto-import exits non-zero if it skipped ANY row, and a row already in
+      # Firefly ([a115]) counts as skipped. Re-importing a file you already
+      # imported is normal here, so that alone must not look like a failure —
+      # but a validation problem ([a117] and friends) must.
+      log=$(mktemp)
+      trap 'rm -f "$log"' EXIT
+      set +e
       sudo -u ${importerUser} ${importerPhp} \
-        ${importerPkg}/artisan importer:auto-import ${importDir}
+        ${importerPkg}/artisan importer:auto-import ${importDir} 2>&1 | tee "$log"
+      set -e
+      if grep -oE '\[a[0-9]+\]' "$log" | grep -qv 'a115'; then
+        echo "==> import reported problems other than duplicates; see above" >&2
+        exit 1
+      fi
+      dupes=$(grep -c 'a115' "$log" || true)
+      [ "$dupes" -gt 0 ] && echo "==> $dupes row(s) already present, skipped"
 
       for f in "''${pending[@]}"; do
         mv -- "$f" "${importArchive}/$(basename "$f")"

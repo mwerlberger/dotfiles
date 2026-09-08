@@ -62,4 +62,13 @@ done
 
 echo
 echo "$ok matching, $bad mismatched"
+# A run that checked nothing must not look like a pass. This happens when the
+# exports came from a custom date range: UBS leaves Anfangssaldo/Schlusssaldo
+# empty there, so every file is skipped and there is nothing to compare against.
+if [ "$ok" -eq 0 ] && [ "$bad" -eq 0 ]; then
+  echo
+  echo "  NOTHING VERIFIED — every file was skipped. Re-export from UBS as a" >&2
+  echo "  defined statement period so it carries Schlusssaldo." >&2
+  exit 2
+fi
 [ "$bad" -eq 0 ]

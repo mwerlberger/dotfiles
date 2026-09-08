@@ -7,7 +7,15 @@
 # Two tab-separated columns, '#' comments and blank lines ignored:
 #   category <TAB> keyword|keyword|keyword
 # e.g.
-#   Groceries<TAB>Migros|Coop|Lidl|SPAR|Denner
+#   Lebensmittel<TAB>Migros|Coop|Lidl|Denner
+#
+# A keyword matches the transaction description. Two prefixes match an account
+# by exact name instead, which is what you want for money moving between your
+# own accounts — their descriptions vary too much to rely on (a transfer to a
+# savings account is sometimes named after the account, sometimes after
+# whatever Zahlungsgrund you typed):
+#   to:SJUMA     destination account is SJUMA
+#   from:MWE     source account is MWE
 #
 # One rule per category, `strict: false` so its triggers are OR'd — any keyword
 # matching the description sets the category. The importer config has
@@ -83,11 +91,18 @@ while IFS=$'\t' read -r category keywords; do
   title="Category: $category"
   order=$((order + 1))
 
-  # Triggers: one description_contains per keyword. `description_contains` is a
-  # search operator (config/search.php); `set_category` is a rule action
-  # (config/firefly.php) — both checked against this Firefly version.
+  # Triggers: one per keyword. A bare keyword matches the description; `to:` and
+  # `from:` match an account by exact name instead. `description_contains`,
+  # `destination_account_is` and `source_account_is` are all search operators
+  # (config/search.php); `set_category` is a rule action (config/firefly.php) —
+  # all checked against this Firefly version.
   triggers=$(printf '%s' "$keywords" | tr '|' '\n' |
-    jq -R 'select(length>0) | {type: "description_contains", value: (. | gsub("^\\s+|\\s+$";"")), active: true, stop_processing: false}' |
+    jq -R 'select(length>0)
+           | (. | gsub("^\\s+|\\s+$";"")) as $kw
+           | if   ($kw | startswith("to:"))   then {type: "destination_account_is", value: $kw[3:]}
+             elif ($kw | startswith("from:")) then {type: "source_account_is",      value: $kw[5:]}
+             else {type: "description_contains", value: $kw} end
+           | . + {active: true, stop_processing: false}' |
     jq -s .)
   n=$(jq 'length' <<<"$triggers")
   [ "$n" -gt 0 ] || continue
