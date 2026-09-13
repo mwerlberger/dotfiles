@@ -49,9 +49,12 @@
     group = "immich";
   };
 
-  # Hardcover API token for rreading-glasses — format: "Bearer <token>"
+  # Hardcover API token — format: "Bearer <token>"
   # Retrieve from: hardcover.app → Settings → API
-  # Expires annually on Jan 1 — update and restart rreading-glasses.service.
+  # Expires annually on Jan 1.
+  # Bindery takes this in its web UI (Settings → Metadata) rather than from the
+  # environment, so nothing reads this file automatically; it is kept here as
+  # the canonical copy to paste from after a rotation.
   age.secrets.hardcover-token = {
     file = ../../../secrets/hardcover-token.age;
     mode = "0400";

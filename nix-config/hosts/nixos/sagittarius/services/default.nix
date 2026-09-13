@@ -20,8 +20,7 @@
     # ./pydio-cells-native.nix  # Native binary version
     ./vpn-namespace.nix
     ./arr.nix
-    ./rreading-glasses.nix
-    # ./bookshelf.nix  # disabled: mkYarnPackage removed in nixpkgs 26.05, migrate to yarn hooks
+    ./bindery.nix
     ./qbittorrent.nix
     ./sabnzbd.nix
     ./navidrome.nix
