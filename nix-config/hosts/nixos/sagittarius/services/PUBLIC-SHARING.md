@@ -202,8 +202,10 @@ Nextcloud drop link for big video.
 **Add a person.** Access Controls → Policies → `family` → add their email to the Include rule.
 Nothing to deploy, and it propagates to every application using that policy.
 
-**Remove a person.** Same place, remove the email. Their existing session dies at the next
-session-duration boundary; to cut it immediately, Zero Trust → Logs → revoke their session.
+**Remove a person.** Same place, remove the email. Email selectors are evaluated **at login
+only**, not continuously, so removal does not kick them out mid-session — their access ends at
+the next session-duration boundary. To cut it immediately, Zero Trust → Logs → revoke their
+session.
 
 **Revoke a shared album.** Immich → album → Share → delete the link. This is independent of
 Access — deleting a link locks out everyone, including people still in `family`.
@@ -260,13 +262,29 @@ endpoints unauthenticated anyway), but they are the part most likely to drift. R
 
 On the NAS:
 
+**Prove the IP containment actually bites.** Reading the unit is not enough: the filters
+no-op silently if systemd lacks `+BPF_FRAMEWORK`, and a wrongly-ordered allow list looks
+identical in `systemctl show`. Test the mechanism with a transient unit carrying the same
+filters — the LAN attempt must fail while loopback succeeds:
+
+```bash
+C=/run/current-system/sw/bin/curl
+# must FAIL (http_code 000)
+sudo systemd-run --quiet --wait --pipe --collect -p IPAddressDeny=any -p IPAddressAllow=localhost \
+  $C -s -o /dev/null -w '%{http_code}\n' --max-time 5 http://192.168.1.1/
+# must SUCCEED (200)
+sudo systemd-run --quiet --wait --pipe --collect -p IPAddressDeny=any -p IPAddressAllow=localhost \
+  $C -s -o /dev/null -w '%{http_code}\n' --max-time 5 http://127.0.0.1:2283/api/server/ping
+```
+
 ```bash
 systemctl status cloudflared-tunnel-<uuid>
 journalctl -u cloudflared-tunnel-<uuid> -n 50        # expect "Registered tunnel connection"
 systemd-analyze security cloudflared-tunnel-<uuid>.service
 
-# IPAddress{Allow,Deny} silently no-op without cgroup-v2 BPF — this must be non-empty
-systemctl show -p IPAddressDeny cloudflared-tunnel-<uuid>.service
+# Note the unit name is required — `systemctl show -p IPAddressDeny` on its own reports
+# the systemd *manager* property, which is always empty and looks alarming.
+systemctl show -p IPAddressDeny -p IPAddressAllow cloudflared-tunnel-<uuid>.service
 
 sudo ss -tlnp | grep -E '846[02]'                    # both must be 127.0.0.1 only
 ```
@@ -302,6 +320,25 @@ No-regression:
 - `tailscale_auth` still gates Grafana, Firefly and Paperless (the Caddy binary changed)
 
 ## Troubleshooting
+
+**No OTP email arrives.** Cloudflare deliberately does **not** send a one-time PIN to an address
+that no Allow policy matches — but the login page still says "a code has been emailed to you"
+either way. That is anti-enumeration, so there is no error to find and silence is the only
+symptom. It nearly always means the address is not matching the policy. Check, in order:
+
+- **`Include` vs `Require`.** `Include` is what grants access; `Require` only adds conditions on
+  top. A rule placed in `Require` with an empty `Include` matches nobody.
+- **The policy is actually attached to the application**, not merely present in the Policies
+  list. Check the application's own Policies tab.
+- **Selector value format.** `Emails` wants a full address (`you@example.com`); *Emails ending
+  in* wants the domain **with** the leading `@` (`@example.com`).
+- **Action is Allow**, not Bypass or Service Auth, and no Deny policy sits above it.
+- Zero Trust → **Logs → Access** shows each attempt with its allow/deny decision. An attempt
+  that does not appear there never reached Access.
+
+`scripts/cf-access-diag.sh` dumps the enabled identity providers and every application's
+attached policies with their include/exclude/require blocks, flagging an unattached policy or an
+empty `Include`. It needs a read-only token and prompts for it rather than taking an argument.
 
 **Everything 404s, or traffic goes somewhere unexpected.** Check that the tunnel is actually
 locally managed. In the dashboard a remotely-managed tunnel shows its routes in the UI; a

@@ -164,48 +164,65 @@ in
 
     # Blast-radius containment. cloudflared is the one process here that talks to the
     # public internet, so assume it can be compromised and make that as boring as
-    # possible: it may reach the Cloudflare edge and loopback, and nothing else.
+    # possible: it may reach the Cloudflare edge, DNS and loopback, and nothing else.
+    # In particular it cannot reach the LAN, the tailnet, or the 10.200.200.0/24 veth to
+    # the Mullvad namespace.
     #
-    # systemd resolves IP filters by longest-prefix match, so the specific denies below
-    # win over the blanket allow. 10.0.0.0/8 also covers the 10.200.200.0/24 veth to the
-    # Mullvad namespace, and 100.64.0.0/10 covers the tailnet -- both intended.
+    # systemd checks IPAddressAllow FIRST and a match there grants access outright --
+    # there is no longest-prefix-match between the two lists (systemd.resource-control(5)).
+    # So this has to be deny-by-default plus explicit allows; "allow any, deny the private
+    # ranges" silently permits everything.
     #
-    # NOTE: IPAddress{Allow,Deny} silently do nothing without cgroup-v2 BPF. Verify with
-    #   systemctl show -p IPAddressDeny cloudflared-tunnel-<uuid>.service
-    systemd.services."cloudflared-tunnel-${tunnelId}".serviceConfig = {
-      IPAddressAllow = "any";
-      IPAddressDeny = [
-        "192.168.0.0/16"
-        "10.0.0.0/8"
-        "172.16.0.0/12"
-        "100.64.0.0/10"
-        "169.254.0.0/16"
-        "fc00::/7"
-        "fe80::/10"
-      ];
+    # The edge ranges are region{1,2}.v2.argotunnel.com (QUIC/UDP 7844). If Cloudflare ever
+    # adds a range, the tunnel fails to connect -- re-check with:
+    #   dig +short region1.v2.argotunnel.com region2.v2.argotunnel.com
+    #
+    # NOTE: this silently does nothing if systemd lacks +BPF_FRAMEWORK. Verify enforcement
+    # empirically, not by reading the unit -- see PUBLIC-SHARING.md.
+    systemd.services."cloudflared-tunnel-${tunnelId}" = {
+      # The startup connectivity precheck dials api.cloudflare.com, which the allow-list
+      # below deliberately blocks -- a locally-managed tunnel with a credentials file never
+      # needs the API at runtime. Skip the check rather than widen the allow-list, so that a
+      # real failure later is not lost among an expected one.
+      environment.TUNNEL_NO_PRECHECKS = "true";
 
-      CapabilityBoundingSet = [ "" ];
-      AmbientCapabilities = [ "" ];
-      NoNewPrivileges = true;
-      PrivateDevices = true;
-      PrivateTmp = true;
-      ProtectClock = true;
-      ProtectControlGroups = true;
-      ProtectHome = true;
-      ProtectHostname = true;
-      ProtectKernelLogs = true;
-      ProtectKernelModules = true;
-      ProtectKernelTunables = true;
-      ProtectProc = "invisible";
-      ProtectSystem = "strict";
-      RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
-      RestrictNamespaces = true;
-      RestrictRealtime = true;
-      RestrictSUIDSGID = true;
-      LockPersonality = true;
-      MemoryDenyWriteExecute = true;
-      SystemCallArchitectures = "native";
-      SystemCallFilter = [ "@system-service" "~@privileged" "~@resources" ];
+      serviceConfig = {
+        IPAddressDeny = "any";
+        IPAddressAllow = [
+          "localhost" # origin vhosts on 127.0.0.1 + cloudflared's own metrics listener
+          "198.41.192.0/24" # region1.v2.argotunnel.com
+          "198.41.200.0/24" # region2.v2.argotunnel.com
+          "2606:4700:a0::/48"
+          "2606:4700:a8::/48"
+          "100.100.100.100" # MagicDNS, the active resolver in /etc/resolv.conf
+          "fd7a:115c:a1e0::53"
+          "1.1.1.1" # fallbacks from networking.nameservers
+          "8.8.8.8"
+        ];
+
+        CapabilityBoundingSet = [ "" ];
+        AmbientCapabilities = [ "" ];
+        NoNewPrivileges = true;
+        PrivateDevices = true;
+        PrivateTmp = true;
+        ProtectClock = true;
+        ProtectControlGroups = true;
+        ProtectHome = true;
+        ProtectHostname = true;
+        ProtectKernelLogs = true;
+        ProtectKernelModules = true;
+        ProtectKernelTunables = true;
+        ProtectProc = "invisible";
+        ProtectSystem = "strict";
+        RestrictAddressFamilies = [ "AF_INET" "AF_INET6" "AF_UNIX" ];
+        RestrictNamespaces = true;
+        RestrictRealtime = true;
+        RestrictSUIDSGID = true;
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+        SystemCallArchitectures = "native";
+        SystemCallFilter = [ "@system-service" "~@privileged" "~@resources" ];
+      };
     };
 
     services.caddy.virtualHosts = lib.mapAttrs' mkVhost published;

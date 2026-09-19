@@ -92,11 +92,18 @@ allow-list). Off by default (`enable = false`). Threat model:
 
 - **No new inbound surface.** `cloudflared` dials out; `networking.firewall` is untouched and
   nothing binds to the public IPv6. The two Caddy vhosts are `bind 127.0.0.1`.
-- **Blast radius of a compromised `cloudflared`** is bounded by systemd `IPAddressDeny` for
-  RFC1918, CGNAT and link-local — it can reach the Cloudflare edge and loopback, not the LAN,
-  the tailnet, or the `10.200.200.0/24` VPN namespace. Plus the usual `Protect*` /
-  `SystemCallFilter` sandbox and the module's `DynamicUser`. Note these IP filters silently
-  no-op without cgroup-v2 BPF — verify with `systemctl show -p IPAddressDeny`.
+- **Blast radius of a compromised `cloudflared`** is bounded by a deny-by-default systemd IP
+  allow-list: `IPAddressDeny=any` plus explicit allows for loopback, the two argotunnel edge
+  ranges and the configured resolvers. It cannot reach the LAN, the tailnet, or the
+  `10.200.200.0/24` VPN namespace. Plus the usual `Protect*` / `SystemCallFilter` sandbox and
+  the module's `DynamicUser` (`systemd-analyze security` scores 1.3).
+  - **The inverse form does not work.** `IPAddressAllow=any` with private ranges in
+    `IPAddressDeny=` silently permits everything: systemd checks the allow list *first* and a
+    match there grants access outright — there is no longest-prefix-match between the two
+    lists (systemd.resource-control(5)). An earlier revision of this module had exactly that
+    bug and looked correct in `systemctl show`.
+  - Filtering also silently no-ops if systemd lacks `+BPF_FRAMEWORK`. **Verify enforcement
+    empirically**, never by reading the unit — see the test in `services/PUBLIC-SHARING.md`.
 - **Access is not the only gate.** Caddy independently verifies Cloudflare's signed JWT against
   the team JWKS and the per-application audience tag, so a token minted for one app cannot be
   replayed against another, and a request reaching the port without one is rejected before the
