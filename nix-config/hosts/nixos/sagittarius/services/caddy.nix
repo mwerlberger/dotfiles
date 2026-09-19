@@ -9,14 +9,17 @@
   services.caddy = {
     enable = true;
 
-    # Build Caddy with the Tailscale‑auth plugin (uses the system tailscaled).
+    # Build Caddy with the Tailscale‑auth plugin (uses the system tailscaled) and
+    # caddy-jwt, which verifies the signed JWT Cloudflare Access puts on requests
+    # arriving through the public tunnel (see services/public-edge.nix).
     package = pkgs.caddy.withPlugins {
       plugins = [
         "go.akpain.net/caddy-tailscale-auth@v0.1.7"
+        "github.com/ggicci/caddy-jwt@v1.4.0"
       ];
       # Vendor hash for the plugin build. Update this whenever the Caddy
       # version changes (a hash mismatch on `nix build` prints the new value).
-      hash = "sha256-3GLq8WZ+TcZt5Oe4DdnsH8X3a5Y7nQZIYih7sRIBoL0=";
+      hash = "sha256-kLAHfEqzHcOE0DV1V9y4Rb0s/+OiNLGvrZPW/nHtRzM=";
     };
 
     globalConfig = ''

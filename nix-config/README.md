@@ -71,19 +71,27 @@ Related files:
 - [rich-demo/Justfile](/rich-demo/Justfile)
 - [rich-demo - homebrew's mirror settings](/rich-demo/modules/homebrew-mirror.nix)
 
-## Reverse proxy (Caddy) with Cloudflare DNS + agenix
+## Reverse proxy (Caddy)
 
-- ACME contact: admin+acme@werlberger.org
-- Secrets managed with agenix; Cloudflare token stored at `secrets/cloudflare-api-token.age` as KEY=VALUE env file.
-- Caddy plugin `caddy-dns/cloudflare` is compiled in; first build may require updating `vendorHash` as printed by the build.
+Caddy fronts everything user-facing. It is built with two plugins
+(`hosts/nixos/sagittarius/services/caddy.nix`):
 
-Steps:
-1) Create Cloudflare token with Zone:DNS:Edit for werlberger.org.
-2) Encrypt env file using age to `secrets/cloudflare-api-token.age` (see `secrets/README.md`).
-3) Ensure AAAA record for `sagittarius.werlberger.org` → 2a02:168:ff46::10 and desired subdomains.
-4) Deploy: `sudo nixos-rebuild switch --flake .#sagittarius` and update vendorHash if prompted.
-5) Access:
-   - https://sagittarius.werlberger.org (health)
-   - https://grafana.sagittarius.werlberger.org
-   - https://prom.sagittarius.werlberger.org
+- `caddy-tailscale-auth` — gates the tailnet vhosts on an active tailnet session
+- `caddy-jwt` — verifies the Cloudflare Access JWT on the public vhosts
 
+Adding or bumping a plugin changes the vendor hash; `nix build` prints the correct one on the
+first failure. Certificates come from Tailscale (`tls { get_certificate tailscale }`) for tailnet
+vhosts and Caddy's internal CA for the few LAN vhosts. **There is no ACME/Let's Encrypt config**
+— an earlier Cloudflare DNS-01 setup was removed, and `secrets/cloudflare-api-token.age` is
+vestigial (its `age.secrets` block in `agenix.nix` is commented out).
+
+Service URLs, ports and firewall state: [`hosts/nixos/sagittarius/README.md`](hosts/nixos/sagittarius/README.md).
+
+## Public sharing (Cloudflare Tunnel + Access)
+
+Immich albums can be shared with a hand-picked group outside the tailnet over a Cloudflare
+Tunnel, gated by Cloudflare Access email OTP. Outbound-only, so no firewall ports are opened.
+**Off by default.**
+
+Setup, day-to-day use and verification:
+[`hosts/nixos/sagittarius/services/PUBLIC-SHARING.md`](hosts/nixos/sagittarius/services/PUBLIC-SHARING.md).

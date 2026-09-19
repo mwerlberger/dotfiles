@@ -5,12 +5,10 @@
 , ...
 }:
 
-let
-  # Immich must run at the root of a (sub)domain.
-  # This host name will be used by Caddy to proxy requests and by Immich to
-  # generate share links.  Adjust if you prefer another subdomain.
-  immichHost = "sagittarius.taildb4b48.ts.net";
-in
+# Immich must run at the root of a (sub)domain. Caddy vhosts live in services/caddy.nix
+# (tailnet :8444, LAN :8088) and services/public-edge.nix (public share links). The hostname
+# Immich stamps into generated share links is its own `server.externalDomain` setting, which
+# lives in the encrypted immich-config.json below — not here.
 {
   services.immich = {
     package = pkgs-unstable.immich;

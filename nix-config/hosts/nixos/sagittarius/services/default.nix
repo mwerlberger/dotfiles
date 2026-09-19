@@ -8,6 +8,7 @@
     ./samba.nix
     ./nfs.nix
     ./caddy.nix
+    ./public-edge.nix
     ./monitoring.nix
     ./postgresql.nix
     ./immich.nix

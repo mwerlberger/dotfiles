@@ -22,6 +22,30 @@ How to read the tables below:
 
 ---
 
+## Public (internet) endpoints
+
+Off by default. `services/public-edge.nix` ships an `enable` flag that is `false` until the
+Cloudflare side exists; see [`services/PUBLIC-SHARING.md`](services/PUBLIC-SHARING.md).
+
+| Service | Public URL | Loopback vhost | Backend | Auth |
+|---------|-----------|----------------|---------|------|
+| Immich share links | `https://photos.werlberger.org` | `127.0.0.1:8460` | `127.0.0.1:2283` | Cloudflare Access (email OTP, reusable policy `family`) + JWT check in Caddy + Immich share key |
+| Nextcloud file drop | `https://drop.werlberger.org` | `127.0.0.1:8462` | `127.0.0.1:8447` | same Access group + JWT check + Nextcloud link token |
+
+Reached over a Cloudflare Tunnel: `cloudflared` dials **out**, so the firewall tables below are
+**unchanged** — there is no new listener on the LAN or on the public IPv6, and no port to
+forward. The two loopback vhosts are bound to `127.0.0.1` and only cloudflared talks to them.
+
+The drop exists because Cloudflare caps request bodies at 100 MB and Immich's *web* uploader
+sends a single-shot POST; Nextcloud's chunks. Responses are not capped, so viewing and
+downloading large video through the tunnel is fine. Retire the drop when upstream Immich ships
+chunked web uploads.
+
+Jellyfin is deliberately **not** published: Cloudflare Access authenticates via a browser OTP
+flow, which native TV and mobile clients cannot complete.
+
+---
+
 ## Web endpoints
 
 | Service | Tailscale URL | LAN URL | Backend | Auth |
@@ -111,7 +135,9 @@ Loopback-only listeners (`127.0.0.1`), reachable only from the host itself:
 | 8083 | otbr-web (OpenThread Border Router UI) |
 | 8123 | Home Assistant |
 | 8447 | Nextcloud nginx backend |
+| 8460 | Caddy, public vhost for Immich share links (cloudflared only; off by default) |
 | 8461 | Firefly III, loopback vhost for the data importer |
+| 8462 | Caddy, public vhost for the Nextcloud file drop (cloudflared only; off by default) |
 | 28981 | Paperless (granian) |
 
 ---
@@ -121,6 +147,9 @@ Loopback-only listeners (`127.0.0.1`), reachable only from the host itself:
 Globally open TCP: `22`, `80`, `443` (Caddy's `openFirewall`), `139`, `445`, `2049`, `8088`, `8444`,
 `8445`, `8446`, `8447`, `8448`, `8449`, `8450`, `8451`, `8452`.
 Interface-scoped: `21063/tcp` and `5353/udp` on `enp5s0` only.
+
+The public-sharing vhosts (`8460`, `8462`) add **nothing** to these lists: the Cloudflare
+tunnel is outbound-only.
 
 `8444`, `8447`, `8451` and `8452` are open on every interface, but Caddy binds those vhosts to
 `100.119.78.108` only — there is no LAN listener, so they are effectively Tailscale-only.
