@@ -8,6 +8,7 @@ let
 in
 {
   "secrets/cloudflare-api-token.age".publicKeys = allKeys;
+  "secrets/cloudflared-credentials.age".publicKeys = allKeys;
   "secrets/tailscale-authkey.age".publicKeys = allKeys;
   "secrets/google-oauth-client-id.age".publicKeys = allKeys;
   "secrets/google-oauth-client-secret.age".publicKeys = allKeys;

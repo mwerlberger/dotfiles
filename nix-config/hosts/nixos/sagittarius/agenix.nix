@@ -14,6 +14,10 @@
   #   group = "root";
   # };
 
+  # The Cloudflare Tunnel credentials secret (cloudflared-credentials) is declared in
+  # services/public-edge.nix instead, guarded by that module's `enable` flag -- agenix
+  # fails the rebuild outright if a referenced .age file does not exist yet.
+
   age.secrets.tailscale-authkey = {
     file = ../../../secrets/tailscale-authkey.age; # adjust path
     mode = "0400";

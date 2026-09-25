@@ -84,6 +84,41 @@ These three combine: a crackable hash + password SSH + passwordless sudo = remot
 
 ---
 
+## 🌐 Public edge (added after this review)
+
+`services/public-edge.nix` publishes Immich share links and a Nextcloud file drop to the
+internet via a Cloudflare Tunnel, gated by Cloudflare Access (email OTP against a named
+allow-list). Off by default (`enable = false`). Threat model:
+
+- **No new inbound surface.** `cloudflared` dials out; `networking.firewall` is untouched and
+  nothing binds to the public IPv6. The two Caddy vhosts are `bind 127.0.0.1`.
+- **Blast radius of a compromised `cloudflared`** is bounded by a deny-by-default systemd IP
+  allow-list: `IPAddressDeny=any` plus explicit allows for loopback, the two argotunnel edge
+  ranges and the configured resolvers. It cannot reach the LAN, the tailnet, or the
+  `10.200.200.0/24` VPN namespace. Plus the usual `Protect*` / `SystemCallFilter` sandbox and
+  the module's `DynamicUser` (`systemd-analyze security` scores 1.3).
+  - **The inverse form does not work.** `IPAddressAllow=any` with private ranges in
+    `IPAddressDeny=` silently permits everything: systemd checks the allow list *first* and a
+    match there grants access outright — there is no longest-prefix-match between the two
+    lists (systemd.resource-control(5)). An earlier revision of this module had exactly that
+    bug and looked correct in `systemctl show`.
+  - Filtering also silently no-ops if systemd lacks `+BPF_FRAMEWORK`. **Verify enforcement
+    empirically**, never by reading the unit — see the test in `services/PUBLIC-SHARING.md`.
+- **Access is not the only gate.** Caddy independently verifies Cloudflare's signed JWT against
+  the team JWKS and the per-application audience tag, so a token minted for one app cannot be
+  replayed against another, and a request reaching the port without one is rejected before the
+  application sees it.
+- **Accepted trade-off:** Cloudflare terminates TLS and can see the photo bytes. This is
+  inherent to Access and no paid tier avoids it. Sensitive services (Firefly III, Paperless)
+  stay tailnet-only for exactly this reason.
+- **Residual risk:** the path deny-lists are defence-in-depth only and can drift on an app
+  upgrade — see the re-check step in `services/PUBLIC-SHARING.md`.
+
+Note finding #7 above becomes a hard prerequisite, not a nice-to-have, if a Tailscale node is
+ever shared with someone outside the household.
+
+---
+
 ## ✅ Done well (no action)
 
 - `agenix` correctly wired — per-secret `mode`/`owner`/`group`, host-key identity, encrypted files.
