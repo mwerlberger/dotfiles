@@ -32,6 +32,7 @@
     pciutils
     pkgs-unstable.claude-code
     pkgs-unstable.graphite-cli
+    pkgs-unstable.herdr
     python314
     ragenix
     restic
