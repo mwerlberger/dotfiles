@@ -68,8 +68,6 @@
       "freetube"
       "voiceink"
       "whatsapp"
-      # "zen"
-      "zen@twilight"
     ];
     brews = [
       # "pulumi"

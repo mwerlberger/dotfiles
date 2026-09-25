@@ -37,9 +37,9 @@
         mru-spaces = false;
         persistent-apps = [
           "/Applications/Ghostty.app"
-          "/Applications/Arc.app"
+          "/Users/mw/Applications/Home Manager Apps/Zen.app"
           "/Applications/Safari.app"
-          "/Applications/Visual Studio Code.app"
+          "/Applications/Nix Apps/Zed.app"
           "/System/Applications/Music.app"
           "/System/Applications/Calendar.app"
           "/System/Applications/Reminders.app"
@@ -47,9 +47,9 @@
           "/System/Applications/Photos.app"
         ];
         persistent-others = [
-          "/Users/${username}/Downloads"
-          "/Users/${username}/Documents"
-          "/Applications"
+          { folder = { path = "/Users/${username}/Downloads"; showas = "fan"; arrangement = "date-added"; }; }
+          { folder = { path = "/Users/${username}/Documents"; displayas = "folder"; showas = "list"; }; }
+          { folder = { path = "/Applications"; displayas = "folder"; showas = "grid"; }; }
         ];
       };
 
